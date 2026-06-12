@@ -1679,7 +1679,7 @@ private struct Whiskers: Shape {
     }
 }
 
-private final class AppDelegate: NSObject, NSApplicationDelegate {
+private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let model = PurrModel(settings: PurrSettings.load())
     private var monitor: YouTubeMonitor?
     private var breakManager: BreakManager?
@@ -1833,6 +1833,45 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.terminate(nil)
     }
 
+    func windowWillClose(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            self?.updateActivationPolicyForOpenWindows()
+        }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag, let window = managedWindows.first(where: { $0.isMiniaturized }) {
+            window.deminiaturize(nil)
+            presentAppWindow(window)
+            return true
+        }
+
+        if !flag {
+            showSettings()
+            return true
+        }
+
+        return true
+    }
+
+    private var managedWindows: [NSWindow] {
+        [settingsWindow, browserSettingsWindow, helpWindow].compactMap { $0 }
+    }
+
+    private func presentAppWindow(_ window: NSWindow) {
+        NSApp.setActivationPolicy(.regular)
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func updateActivationPolicyForOpenWindows() {
+        let hasOpenWindow = managedWindows.contains { window in
+            window.isVisible || window.isMiniaturized
+        }
+
+        NSApp.setActivationPolicy(hasOpenWindow ? .regular : .accessory)
+    }
+
     private func showSettings() {
         if settingsWindow == nil {
             let view = SettingsView(
@@ -1857,13 +1896,15 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
             )
             window.title = "PurrBreak"
             window.contentView = NSHostingView(rootView: view)
+            window.delegate = self
             window.center()
             window.isReleasedWhenClosed = false
             settingsWindow = window
         }
 
-        settingsWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        if let settingsWindow {
+            presentAppWindow(settingsWindow)
+        }
     }
 
     private func showBrowserSettings(isFirstRun: Bool = false) {
@@ -1883,14 +1924,16 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
                 defer: false
             )
             window.center()
+            window.delegate = self
             window.isReleasedWhenClosed = false
             browserSettingsWindow = window
         }
 
         browserSettingsWindow?.title = isFirstRun ? "Доступ к браузеру" : "Проверка браузеров"
         browserSettingsWindow?.contentView = NSHostingView(rootView: view)
-        browserSettingsWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        if let browserSettingsWindow {
+            presentAppWindow(browserSettingsWindow)
+        }
     }
 
     private func showHelp() {
@@ -1903,13 +1946,15 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
             )
             window.title = "Справка PurrBreak"
             window.contentView = NSHostingView(rootView: HelpView())
+            window.delegate = self
             window.center()
             window.isReleasedWhenClosed = false
             helpWindow = window
         }
 
-        helpWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        if let helpWindow {
+            presentAppWindow(helpWindow)
+        }
     }
 
     private func openAutomationSettings() {
