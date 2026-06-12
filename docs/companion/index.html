@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PurrBreak Companion - убрать Shorts и рекомендации</title>
+    <meta name="description" content="PurrBreak Companion прячет Shorts, рекомендации, комментарии и autoplay на YouTube, а также экспериментально помогает с Instagram Reels.">
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #fffaf5;
+        --ink: #261f1b;
+        --muted: #6f625b;
+        --line: #eadfd6;
+        --panel: #ffffff;
+        --soft: #fff0df;
+        --accent: #ff8a2a;
+        --accent-ink: #2b1608;
+        --shadow: 0 18px 50px rgb(70 44 24 / 0.14);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 12% 0%, #ffe8c9 0, transparent 28rem),
+          linear-gradient(180deg, var(--bg), #f8fbfb 70%);
+        letter-spacing: 0;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 28px 24px 60px;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 34px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        font-size: 20px;
+        text-decoration: none;
+      }
+
+      .brand img {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        box-shadow: 0 8px 22px rgb(25 20 16 / 0.16);
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 14px;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .nav-links a {
+        text-decoration: none;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+        gap: 44px;
+        align-items: center;
+        margin-top: 0;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 11px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        background: rgb(255 255 255 / 0.68);
+        font-size: 14px;
+        font-weight: 650;
+      }
+
+      h1 {
+        max-width: 780px;
+        margin: 22px 0 16px;
+        font-size: clamp(40px, 5.2vw, 66px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 660px;
+        margin: 0 0 28px;
+        color: var(--muted);
+        font-size: 21px;
+        line-height: 1.45;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 18px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 750;
+        background: var(--panel);
+      }
+
+      .button.primary {
+        border-color: transparent;
+        color: var(--accent-ink);
+        background: linear-gradient(180deg, #ffa64b, var(--accent));
+        box-shadow: 0 10px 28px rgb(255 138 42 / 0.28);
+      }
+
+      .note {
+        max-width: 620px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .mock {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .mock-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .mock-head img {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+      }
+
+      .mock-title {
+        font-weight: 800;
+        font-size: 18px;
+      }
+
+      .mock-subtitle {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 2px;
+      }
+
+      .toggle-list {
+        padding: 10px 18px 18px;
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 17px;
+      }
+
+      .switch {
+        width: 44px;
+        height: 26px;
+        border-radius: 999px;
+        background: #f3923a;
+        position: relative;
+        flex: 0 0 auto;
+      }
+
+      .switch::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: white;
+        box-shadow: 0 1px 6px rgb(0 0 0 / 0.24);
+      }
+
+      section {
+        margin-top: 70px;
+      }
+
+      h2 {
+        margin: 0 0 18px;
+        font-size: 34px;
+        line-height: 1.1;
+        letter-spacing: 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .card {
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgb(255 255 255 / 0.78);
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 18px;
+      }
+
+      .card p,
+      .steps li {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .card p {
+        margin: 0;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        gap: 24px;
+        align-items: start;
+      }
+
+      .steps {
+        margin: 0;
+        padding-left: 22px;
+      }
+
+      .steps li {
+        margin: 0 0 12px;
+      }
+
+      code {
+        padding: 2px 5px;
+        border-radius: 6px;
+        background: var(--soft);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.94em;
+      }
+
+      .footer {
+        margin-top: 70px;
+        padding-top: 22px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 820px) {
+        .page {
+          padding-inline: 18px;
+        }
+
+        .nav {
+          align-items: flex-start;
+          flex-direction: column;
+          margin-bottom: 34px;
+        }
+
+        .hero,
+        .split {
+          grid-template-columns: 1fr;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 44px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <nav class="nav">
+        <a class="brand" href="../../">
+          <img src="../assets/purrbreak-icon.png" alt="">
+          <span>PurrBreak Companion</span>
+        </a>
+        <div class="nav-links">
+          <a href="#features">Что убирает</a>
+          <a href="#install">Установка</a>
+          <a href="https://github.com/omiusgm/PurrBreak/tree/main/extensions/purrbreak-companion">README</a>
+        </div>
+      </nav>
+
+      <main>
+        <section class="hero">
+          <div>
+            <span class="eyebrow">Расширение к PurrBreak</span>
+            <h1>Убрать Shorts, рекомендации и лишние крючки YouTube.</h1>
+            <p class="lead">
+              PurrBreak делает паузы, а Companion очищает сам интерфейс: прячет Shorts,
+              боковые рекомендации, комментарии, end wall и autoplay. Instagram Reels
+              поддерживается как экспериментальная доп. опция.
+            </p>
+            <div class="actions">
+              <a class="button primary" href="https://github.com/omiusgm/PurrBreak/raw/main/dist/PurrBreak-Companion-0.1.0.zip">Скачать расширение</a>
+              <a class="button" href="https://github.com/omiusgm/PurrBreak/tree/main/extensions/purrbreak-companion">Открыть README</a>
+            </div>
+            <p class="note">
+              Сейчас это MVP для Chromium-браузеров: Chrome, Yandex Browser, Arc, Brave,
+              Edge, Opera, Vivaldi и Chromium. Safari/iPhone потребуют отдельную обертку позже.
+            </p>
+          </div>
+
+          <div class="mock" aria-label="Превью popup расширения">
+            <div class="mock-head">
+              <img src="../assets/purrbreak-icon.png" alt="">
+              <div>
+                <div class="mock-title">PurrBreak Companion</div>
+                <div class="mock-subtitle">Make feeds less sticky</div>
+              </div>
+            </div>
+            <div class="toggle-list">
+              <div class="toggle-row"><span>Hide Shorts</span><span class="switch"></span></div>
+              <div class="toggle-row"><span>Hide homepage</span><span class="switch"></span></div>
+              <div class="toggle-row"><span>Hide sidebar / recommendations</span><span class="switch"></span></div>
+              <div class="toggle-row"><span>Hide comments</span><span class="switch"></span></div>
+              <div class="toggle-row"><span>Disable autoplay</span><span class="switch"></span></div>
+              <div class="toggle-row"><span>Instagram: Hide Reels</span><span class="switch"></span></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="features">
+          <h2>Что можно отключить</h2>
+          <div class="grid">
+            <div class="card">
+              <strong>YouTube Shorts</strong>
+              <p>Прячет Shorts из меню, ленты и блоков рекомендаций, чтобы короткие видео не утягивали внимание.</p>
+            </div>
+            <div class="card">
+              <strong>Рекомендации</strong>
+              <p>Убирает боковую колонку, homepage, end wall и другие элементы, которые ведут к следующему ролику.</p>
+            </div>
+            <div class="card">
+              <strong>Комментарии и autoplay</strong>
+              <p>Можно скрыть комментарии и автоматически выключать autoplay на странице просмотра.</p>
+            </div>
+            <div class="card">
+              <strong>Focus mode</strong>
+              <p>Оставляет YouTube ближе к инструменту: поиск и открытое видео, меньше отвлекающих поверхностей.</p>
+            </div>
+            <div class="card">
+              <strong>Instagram Reels</strong>
+              <p>Экспериментально прячет Reels, Explore и suggested accounts. Это дополнительный режим, не основной фокус.</p>
+            </div>
+            <div class="card">
+              <strong>Локально и прозрачно</strong>
+              <p>Расширение не отправляет данные наружу. Настройки хранятся в браузере через chrome.storage.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="install" class="split">
+          <div>
+            <h2>Как установить</h2>
+            <p class="lead">
+              Пока расширение не опубликовано в магазинах, его можно поставить как unpacked extension.
+            </p>
+          </div>
+          <ol class="steps">
+            <li>Скачай архив <a href="https://github.com/omiusgm/PurrBreak/raw/main/dist/PurrBreak-Companion-0.1.0.zip">PurrBreak-Companion-0.1.0.zip</a> и распакуй его.</li>
+            <li>Открой в браузере <code>chrome://extensions</code> или аналогичную страницу расширений.</li>
+            <li>Включи <code>Developer mode</code>.</li>
+            <li>Нажми <code>Load unpacked</code>.</li>
+            <li>Выбери распакованную папку <code>purrbreak-companion</code>.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>Почему это отдельное расширение</h2>
+          <div class="card">
+            <p>
+              Нативное macOS-приложение хорошо считает активное время и запускает мягкую паузу.
+              Но убрать Shorts, комментарии и рекомендации внутри страницы может только браузерное расширение.
+              Поэтому PurrBreak и Companion работают как пара: паузы снаружи, меньше крючков внутри.
+            </p>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        PurrBreak Companion is open source. Код и README: <a href="https://github.com/omiusgm/PurrBreak/tree/main/extensions/purrbreak-companion">github.com/omiusgm/PurrBreak</a>.
+      </footer>
+    </div>
+  </body>
+</html>

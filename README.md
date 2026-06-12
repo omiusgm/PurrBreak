@@ -75,6 +75,8 @@ PurrBreak читает URL активной вкладки браузера че
 
 PurrBreak Companion - экспериментальное браузерное расширение для Chrome, Yandex Browser, Arc, Brave, Edge, Opera, Vivaldi и Chromium. Оно не заменяет паузы PurrBreak, а убирает липкие элементы внутри сайтов. Сейчас главный фокус PurrBreak остается на YouTube, а Instagram/Reels - дополнительная опция.
 
+Лендинг расширения: [`docs/companion`](https://omiusgm.github.io/PurrBreak/companion/).
+
 YouTube MVP:
 
 - Hide Shorts.
@@ -91,7 +93,7 @@ Instagram MVP, пока экспериментально:
 - Hide Explore.
 - Hide suggested accounts.
 
-Локальная установка:
+Локальная установка из исходников:
 
 1. Открой `chrome://extensions`.
 2. Включи developer mode.
@@ -180,6 +182,14 @@ open .build/PurrBreak.app
 ```
 
 Скрипт отправит `main` и тег `v0.1.0`. После push тега GitHub Actions соберет `PurrBreak-0.1.0-macOS.zip` и создаст GitHub Release.
+
+Чтобы лендинг Companion открывался как обычная страница:
+
+1. Открой настройки репозитория на GitHub.
+2. Перейди в `Pages`.
+3. В `Build and deployment` выбери `Deploy from a branch`.
+4. Выбери branch `main` и folder `/docs`.
+5. После публикации страница будет доступна по адресу `https://omiusgm.github.io/PurrBreak/companion/`.
 
 ## Разработка
 

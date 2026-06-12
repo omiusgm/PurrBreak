@@ -21,6 +21,7 @@ jobs:
           chmod +x scripts/*.sh scripts/*.swift
           VERSION="${GITHUB_REF_NAME#v}"
           ./scripts/package-release.sh "$VERSION"
+          ./scripts/package-companion.sh "$VERSION"
 
       - name: Create GitHub release
         env:
@@ -29,5 +30,6 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           gh release create "$GITHUB_REF_NAME" \
             "dist/PurrBreak-$VERSION-macOS.zip" \
+            "dist/PurrBreak-Companion-$VERSION.zip" \
             --title "PurrBreak $VERSION" \
-            --notes "Download PurrBreak-$VERSION-macOS.zip, unzip it, and open PurrBreak.app. The app is currently ad-hoc signed, so macOS may ask you to right-click and choose Open on first launch."
+            --notes "Download PurrBreak-$VERSION-macOS.zip, unzip it, and open PurrBreak.app. Optional: download PurrBreak-Companion-$VERSION.zip to install the browser extension as an unpacked extension. The app is currently ad-hoc signed, so macOS may ask you to right-click and choose Open on first launch."

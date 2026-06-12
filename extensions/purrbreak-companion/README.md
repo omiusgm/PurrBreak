@@ -1,10 +1,14 @@
 # PurrBreak Companion
 
-Browser extension MVP for making YouTube and Instagram less sticky.
+MVP браузерного расширения, которое делает YouTube и Instagram менее липкими.
 
-PurrBreak itself creates mindful breaks. Companion removes the interface hooks that pull you into the next video.
+PurrBreak делает осознанные паузы. Companion убирает интерфейсные крючки, которые тянут к следующему ролику.
 
-## Current MVP
+Лендинг: <https://omiusgm.github.io/PurrBreak/companion/>
+
+Short English version: PurrBreak Companion hides Shorts, recommendations, comments, autoplay, and experimental Instagram Reels hooks.
+
+## Что уже есть
 
 YouTube:
 
@@ -16,25 +20,26 @@ YouTube:
 - Disable autoplay.
 - Focus mode.
 
-Instagram experimental:
+Instagram, экспериментально:
 
 - Hide Reels.
 - Hide Explore.
 - Hide suggested accounts.
 
-## Install locally
+## Установка локально
 
-For Chrome, Yandex Browser, Arc, Brave, Edge, Opera, Vivaldi, and Chromium:
+Для Chrome, Yandex Browser, Arc, Brave, Edge, Opera, Vivaldi и Chromium:
 
-1. Open the browser extensions page, for example `chrome://extensions`.
-2. Enable developer mode.
-3. Click `Load unpacked`.
-4. Select this folder: `extensions/purrbreak-companion`.
+1. Скачай и распакуй `PurrBreak-Companion-0.1.0.zip` из GitHub Release или собери архив командой `./scripts/package-companion.sh`.
+2. Открой страницу расширений браузера, например `chrome://extensions`.
+3. Включи developer mode.
+4. Нажми `Load unpacked`.
+5. Выбери распакованную папку `purrbreak-companion`.
 
-Safari and iPhone support will need a separate Safari Web Extension wrapper later.
+Safari и iPhone потребуют отдельную Safari Web Extension-обертку позже.
 
-## Notes
+## Заметки
 
-- YouTube and Instagram change their markup often, so selectors may need maintenance.
-- Instagram support is intentionally experimental.
-- This extension does not collect or send data.
+- YouTube и Instagram часто меняют разметку, поэтому CSS-селекторы иногда нужно будет чинить.
+- Instagram-поддержка намеренно помечена как экспериментальная.
+- Расширение не собирает и не отправляет данные.

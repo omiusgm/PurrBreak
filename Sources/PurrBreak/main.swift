@@ -2735,7 +2735,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     private func openCompanionPage() {
-        if let url = URL(string: "https://github.com/omiusgm/PurrBreak/tree/main/extensions/purrbreak-companion") {
+        if let url = URL(string: "https://omiusgm.github.io/PurrBreak/companion/") {
             NSWorkspace.shared.open(url)
         }
     }
