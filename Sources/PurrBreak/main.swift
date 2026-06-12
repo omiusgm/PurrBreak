@@ -61,7 +61,7 @@ private enum AppLanguage: String, CaseIterable, Identifiable, Equatable {
 
 private enum L10n {
     private static let ru: [String: String] = [
-        "app.subtitle": "Мягкий тайм-аут для YouTube",
+        "app.subtitle": "YouTube-паузы и меньше ловушек в Shorts/Reels",
         "language": "Язык",
         "theme.sleep": "Рыжий сон",
         "theme.moon": "Лунная дрема",
@@ -97,9 +97,14 @@ private enum L10n {
         "settings.youtubeInactive": "YouTube не активен",
         "settings.watched": "Просмотрено",
         "settings.screensaver": "Заставка",
+        "settings.limitsTitle": "Лимиты YouTube",
+        "settings.limitsCaption": "Обычные видео и Shorts считаются отдельно.",
         "settings.limit": "Лимит YouTube",
         "settings.shortsLimit": "Лимит Shorts",
         "settings.breakLength": "Длина паузы",
+        "settings.companionTitle": "Дополнительно: убрать Shorts и рекомендации",
+        "settings.companionText": "Companion-расширение прячет липкие элементы YouTube и экспериментально помогает с Instagram Reels.",
+        "settings.companionButton": "Открыть расширение",
         "settings.purrSound": "Мурчание во время паузы",
         "settings.purrVolume": "Громкость мурчания",
         "settings.minutes": "%d мин",
@@ -165,7 +170,7 @@ private enum L10n {
     ]
 
     private static let en: [String: String] = [
-        "app.subtitle": "A gentle YouTube timeout",
+        "app.subtitle": "YouTube breaks and fewer Shorts/Reels traps",
         "language": "Language",
         "theme.sleep": "Orange Nap",
         "theme.moon": "Moonlit Doze",
@@ -201,9 +206,14 @@ private enum L10n {
         "settings.youtubeInactive": "YouTube is not active",
         "settings.watched": "Watched",
         "settings.screensaver": "Screensaver",
+        "settings.limitsTitle": "YouTube limits",
+        "settings.limitsCaption": "Regular videos and Shorts are counted separately.",
         "settings.limit": "YouTube limit",
         "settings.shortsLimit": "Shorts limit",
         "settings.breakLength": "Break length",
+        "settings.companionTitle": "Extra: hide Shorts and recommendations",
+        "settings.companionText": "The Companion extension hides sticky YouTube hooks and experimentally helps with Instagram Reels.",
+        "settings.companionButton": "Open extension",
         "settings.purrSound": "Purring during breaks",
         "settings.purrVolume": "Purr volume",
         "settings.minutes": "%d min",
@@ -1352,6 +1362,7 @@ private struct SettingsView: View {
     let resetCounter: () -> Void
     let showHelp: () -> Void
     let showBrowserSettings: () -> Void
+    let openCompanion: () -> Void
     let quit: () -> Void
 
     var body: some View {
@@ -1418,17 +1429,49 @@ private struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                Stepper(value: binding(\.watchLimitMinutes), in: 1...240) {
-                    settingRow(title: model.tr("settings.limit"), value: model.tr("settings.minutes", model.settings.watchLimitMinutes))
-                }
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(model.tr("settings.limitsTitle"), systemImage: "timer")
+                        .font(.headline)
+                    Text(model.tr("settings.limitsCaption"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
-                Stepper(value: binding(\.shortsLimitMinutes), in: 1...120) {
-                    settingRow(title: model.tr("settings.shortsLimit"), value: model.tr("settings.minutes", model.settings.shortsLimitMinutes))
-                }
+                    Stepper(value: binding(\.watchLimitMinutes), in: 1...240) {
+                        settingRow(title: model.tr("settings.limit"), value: model.tr("settings.minutes", model.settings.watchLimitMinutes))
+                    }
 
-                Stepper(value: binding(\.breakMinutes), in: 1...60) {
-                    settingRow(title: model.tr("settings.breakLength"), value: model.tr("settings.minutes", model.settings.breakMinutes))
+                    Stepper(value: binding(\.shortsLimitMinutes), in: 1...120) {
+                        settingRow(title: model.tr("settings.shortsLimit"), value: model.tr("settings.minutes", model.settings.shortsLimitMinutes))
+                    }
+
+                    Stepper(value: binding(\.breakMinutes), in: 1...60) {
+                        settingRow(title: model.tr("settings.breakLength"), value: model.tr("settings.minutes", model.settings.breakMinutes))
+                    }
                 }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.primary.opacity(0.045))
+                )
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Label(model.tr("settings.companionTitle"), systemImage: "sparkles.rectangle.stack")
+                        .font(.headline)
+                    Text(model.tr("settings.companionText"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button {
+                        openCompanion()
+                    } label: {
+                        Label(model.tr("settings.companionButton"), systemImage: "arrow.up.right.square")
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.primary.opacity(0.045))
+                )
 
                 Toggle(model.tr("settings.purrSound"), isOn: binding(\.soundEnabled))
 
@@ -2564,11 +2607,12 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 },
                 showHelp: { [weak self] in self?.showHelp() },
                 showBrowserSettings: { [weak self] in self?.showBrowserSettings() },
+                openCompanion: { [weak self] in self?.openCompanionPage() },
                 quit: { NSApp.terminate(nil) }
             )
 
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 560, height: 590),
+                contentRect: NSRect(x: 0, y: 0, width: 560, height: 740),
                 styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false

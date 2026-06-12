@@ -5,12 +5,12 @@
 <h1 align="center">PurrBreak</h1>
 
 <p align="center">
-  Мягкая open-source альтернатива жестким блокировщикам, сфокусированная на осознанных YouTube-паузах.
+  Мягкая open-source альтернатива жестким блокировщикам, сфокусированная на осознанных YouTube-паузах и снижении залипания в Shorts/Reels.
 </p>
 
-Маленькое macOS-приложение, которое считает время активного просмотра YouTube и запускает обязательную паузу с большим анимированным котом и мурчанием.
+Маленькое macOS-приложение, которое считает время активного просмотра YouTube и запускает обязательную паузу с большим анимированным котом и мурчанием. Дополнительно в репозитории есть PurrBreak Companion - браузерное расширение, которое убирает Shorts, рекомендации и экспериментально помогает с Instagram Reels.
 
-PurrBreak is a small macOS menu-bar app that gently interrupts long YouTube sessions with a cozy animated cat break.
+PurrBreak is a small macOS menu-bar app that gently interrupts long YouTube sessions with a cozy animated cat break. The optional Companion extension removes sticky YouTube and experimental Instagram/Reels hooks.
 
 В отличие от строгих блокировщиков, PurrBreak не пытается наказать или запереть пользователя. Его задача проще: заметить момент залипания, мягко перекрыть экран на несколько минут и дать шанс вернуться в нормальное состояние.
 
@@ -65,7 +65,7 @@ PurrBreak читает URL активной вкладки браузера че
 - Есть 4 заставки: `Рыжий сон`, `Лунная дрема`, `Дождливое окно`, `Космический сон`.
 - Интерфейс можно переключить между русским и английским языком.
 - В окне и меню-баре можно выбрать заставку, запустить тест без блокировки кликов, включить ручную блокировку и сбросить счетчик.
-- В репозитории есть MVP браузерного расширения PurrBreak Companion, которое убирает Shorts, рекомендации, комментарии, autoplay и экспериментально помогает с Instagram Reels.
+- На главном экране есть кнопка PurrBreak Companion: расширение убирает Shorts, рекомендации, комментарии, autoplay и экспериментально помогает с Instagram Reels.
 
 ## YouTube как музыка фоном
 
@@ -73,7 +73,7 @@ PurrBreak читает URL активной вкладки браузера че
 
 ## Дополнительно: убрать Shorts и рекомендации
 
-PurrBreak Companion - экспериментальное браузерное расширение для Chrome, Yandex Browser, Arc, Brave, Edge, Opera, Vivaldi и Chromium. Оно не заменяет паузы PurrBreak, а убирает липкие элементы внутри сайтов.
+PurrBreak Companion - экспериментальное браузерное расширение для Chrome, Yandex Browser, Arc, Brave, Edge, Opera, Vivaldi и Chromium. Оно не заменяет паузы PurrBreak, а убирает липкие элементы внутри сайтов. Сейчас главный фокус PurrBreak остается на YouTube, а Instagram/Reels - дополнительная опция.
 
 YouTube MVP:
 
