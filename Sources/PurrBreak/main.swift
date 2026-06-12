@@ -943,6 +943,7 @@ private final class BreakManager {
     private var previewEndDate: Date?
     private var previewLocalKeyMonitor: Any?
     private var previewGlobalKeyMonitor: Any?
+    private var isClosingPreview = false
     private var onFinished: (() -> Void)?
     private var onStatusChanged: (() -> Void)?
 
@@ -1049,20 +1050,36 @@ private final class BreakManager {
         onStatusChanged?()
         audio.stop()
 
-        windows.forEach { $0.close() }
+        dismissOverlayWindows(windows)
         windows.removeAll()
 
         onFinished?()
     }
 
+    private func requestClosePreview() {
+        guard model.isPreviewingBreak || !previewWindows.isEmpty else { return }
+        guard !isClosingPreview else { return }
+
+        isClosingPreview = true
+        DispatchQueue.main.async { [weak self] in
+            self?.closePreview()
+        }
+    }
+
     private func closePreview() {
+        guard model.isPreviewingBreak || !previewWindows.isEmpty || previewTimer != nil else {
+            isClosingPreview = false
+            return
+        }
+
         previewTimer?.invalidate()
         previewTimer = nil
         previewEndDate = nil
         model.isPreviewingBreak = false
         stopPreviewKeyMonitors()
-        previewWindows.forEach { $0.close() }
+        dismissOverlayWindows(previewWindows)
         previewWindows.removeAll()
+        isClosingPreview = false
 
         if !model.isOnBreak {
             model.breakRemainingSeconds = 0
@@ -1087,6 +1104,7 @@ private final class BreakManager {
             window.backgroundColor = .clear
             window.ignoresMouseEvents = ignoresMouseEvents
             window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+            window.animationBehavior = .none
             window.hidesOnDeactivate = false
             window.canHide = false
             window.orderFrontRegardless()
@@ -1096,12 +1114,20 @@ private final class BreakManager {
         return createdWindows
     }
 
+    private func dismissOverlayWindows(_ windows: [NSWindow]) {
+        for window in windows {
+            window.animations = [:]
+            window.orderOut(nil)
+            window.contentView = nil
+        }
+    }
+
     private func startPreviewKeyMonitors() {
         stopPreviewKeyMonitors()
 
         previewLocalKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 {
-                self?.closePreview()
+                self?.requestClosePreview()
                 return nil
             }
 
@@ -1110,9 +1136,7 @@ private final class BreakManager {
 
         previewGlobalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 {
-                DispatchQueue.main.async {
-                    self?.closePreview()
-                }
+                self?.requestClosePreview()
             }
         }
     }
@@ -1405,7 +1429,6 @@ private struct SettingsView: View {
                     )
                 }
                 .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.escape, modifiers: [])
 
                 Button {
                     startBreak()
