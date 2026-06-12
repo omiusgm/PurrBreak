@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build release archive
+        run: |
+          chmod +x scripts/*.sh scripts/*.swift
+          VERSION="${GITHUB_REF_NAME#v}"
+          ./scripts/package-release.sh "$VERSION"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/PurrBreak-$VERSION-macOS.zip" \
+            --title "PurrBreak $VERSION" \
+            --notes "Download PurrBreak-$VERSION-macOS.zip, unzip it, and open PurrBreak.app. The app is currently ad-hoc signed, so macOS may ask you to right-click and choose Open on first launch."
