@@ -4,11 +4,258 @@ import SwiftUI
 
 private enum DefaultsKey {
     static let watchLimitMinutes = "watchLimitMinutes"
+    static let shortsLimitMinutes = "shortsLimitMinutes"
     static let breakMinutes = "breakMinutes"
     static let soundEnabled = "soundEnabled"
     static let purrVolume = "purrVolume"
     static let screensaverThemeID = "screensaverThemeID"
     static let didShowBrowserSetup = "didShowBrowserSetup"
+    static let languageCode = "languageCode"
+    static let statsDate = "statsDate"
+    static let dailyYouTubeSeconds = "dailyYouTubeSeconds"
+    static let dailyBreakCount = "dailyBreakCount"
+    static let dailySavedSeconds = "dailySavedSeconds"
+}
+
+private enum AppLanguage: String, CaseIterable, Identifiable, Equatable {
+    case ru
+    case en
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .ru:
+            return "Русский"
+        case .en:
+            return "English"
+        }
+    }
+
+    var locale: Locale {
+        switch self {
+        case .ru:
+            return Locale(identifier: "ru_RU")
+        case .en:
+            return Locale(identifier: "en_US")
+        }
+    }
+
+    static var systemDefault: AppLanguage {
+        let preferred = Locale.preferredLanguages.first?.lowercased() ?? ""
+        return preferred.hasPrefix("ru") ? .ru : .en
+    }
+
+    static func matching(_ code: String?) -> AppLanguage {
+        guard let code else {
+            return systemDefault
+        }
+
+        guard let language = AppLanguage(rawValue: code) else {
+            return systemDefault
+        }
+
+        return language
+    }
+}
+
+private enum L10n {
+    private static let ru: [String: String] = [
+        "app.subtitle": "Мягкий тайм-аут для YouTube",
+        "language": "Язык",
+        "theme.sleep": "Рыжий сон",
+        "theme.moon": "Лунная дрема",
+        "theme.rain": "Дождливое окно",
+        "theme.space": "Космический сон",
+        "status.breakRemaining": "До конца паузы",
+        "status.previewRemaining": "До конца теста",
+        "status.untilBreak": "До заставки",
+        "monitor.ready": "Готов следить за YouTube",
+        "monitor.noBrowser": "Браузер не найден",
+        "monitor.breakInProgress": "Идет пауза",
+        "monitor.accessNeeded": "Нужен доступ Automation: %@",
+        "monitor.unsupported": "%@ пока не поддерживается",
+        "monitor.browserNotFront": "Браузер не на переднем плане",
+        "monitor.waitingYouTube": "Жду активный YouTube",
+        "monitor.youtubeActive": "YouTube активен",
+        "monitor.shortsActive": "YouTube Shorts активны",
+        "monitor.emptyTab": "Вкладка без адреса",
+        "monitor.notYouTube": "Сейчас не YouTube",
+        "browser.state.notInstalled": "Не найден",
+        "browser.state.waiting": "Ожидает проверки",
+        "browser.state.connected": "Подключен",
+        "browser.state.needsPermission": "Нужен доступ",
+        "browser.state.unsupported": "Пока не поддерживается",
+        "browser.detail.notInstalled": "Приложение не найдено на этом Mac.",
+        "browser.detail.waiting": "Открой YouTube в этом браузере, чтобы macOS запросила доступ.",
+        "browser.detail.connected": "URL активной вкладки читается.",
+        "browser.detail.unsupported": "Нужен отдельный способ отслеживания, например расширение.",
+        "browser.detail.unsupportedSpecific": "%@ пока лучше подключать через расширение или отдельный fallback.",
+        "browser.error.unsupported": "%@: пока не умею читать URL активной вкладки",
+        "browser.error.noAccess": "%@: macOS пока не дала доступ к активной вкладке",
+        "settings.youtubeActive": "YouTube идет",
+        "settings.youtubeInactive": "YouTube не активен",
+        "settings.watched": "Просмотрено",
+        "settings.screensaver": "Заставка",
+        "settings.limit": "Лимит YouTube",
+        "settings.shortsLimit": "Лимит Shorts",
+        "settings.breakLength": "Длина паузы",
+        "settings.purrSound": "Мурчание во время паузы",
+        "settings.purrVolume": "Громкость мурчания",
+        "settings.minutes": "%d мин",
+        "settings.testStop": "Остановить тест",
+        "settings.test": "Тест заставки",
+        "settings.startBreak": "Блокировка сейчас",
+        "settings.resetCounter": "Сбросить счетчик",
+        "settings.browserCheck": "Проверка браузеров",
+        "settings.help": "Справка",
+        "settings.quit": "Выйти",
+        "stats.today": "Сегодня YouTube: %@ • Паузы: %d • Спасено: %@",
+        "duration.hoursMinutes": "%dч %02dм",
+        "duration.minutes": "%dм",
+        "browserCheck.firstTitle": "Доступ к браузеру",
+        "browserCheck.title": "Проверка браузеров",
+        "browserCheck.subtitle": "Галочка появляется сама, когда PurrBreak успешно читает активную вкладку",
+        "browserCheck.firstRun": "Первый запуск",
+        "browserCheck.firstRunText": "Ничего заранее подключать не нужно. Открой YouTube в Chrome, Safari или Yandex Browser. Когда macOS спросит Automation, разреши доступ. Если запроса нет или ты случайно отказал, открой системные разрешения кнопкой ниже.",
+        "browserCheck.openPermissions": "Открыть разрешения macOS",
+        "browserCheck.openMainSettings": "Перейти к настройкам",
+        "browserCheck.done": "Готово",
+        "browserCheck.access": "Доступ к браузерам",
+        "browserCheck.explainer": "Это не ручная настройка. Статус просто показывает, получилось ли у PurrBreak прочитать активную вкладку. Если галочка уже есть, делать ничего не нужно.",
+        "browserCheck.hidden": "Неустановленные браузеры скрыты: %d.",
+        "help.title": "Как работает PurrBreak",
+        "help.subtitle": "Коротко о счетчике, паузах и разрешениях",
+        "help.whatCounts.title": "Что считает приложение",
+        "help.whatCounts.text": "PurrBreak каждую секунду смотрит, какой браузер сейчас активен, и читает URL активной вкладки. Счетчик идет только если активная вкладка открыта на youtube.com или youtu.be.",
+        "help.whenBreak.title": "Когда появляется заставка",
+        "help.whenBreak.text": "Когда накоплен лимит просмотра, приложение показывает полноэкранную паузу с выбранной заставкой. По умолчанию обычный YouTube ограничен 20 минутами, Shorts - 5 минутами, пауза длится 5 минут. После завершения паузы счетчик сбрасывается.",
+        "help.automation.title": "Зачем нужен Automation",
+        "help.automation.text": "macOS требует разрешение Automation, чтобы приложение могло спросить браузер об адресе активной вкладки. PurrBreak не читает историю, пароли, содержимое страниц или личные данные.",
+        "help.browserStatus.title": "Статусы браузеров",
+        "help.browserStatus.text": "Отдельное окно Проверка браузеров показывает, получилось ли прочитать активную вкладку. Если галочка уже есть, делать ничего не нужно; системные настройки нужны только при отказе или ошибке доступа.",
+        "help.supported.title": "Какие браузеры поддерживаются",
+        "help.supported.text": "Safari, Chrome, Yandex Browser, Brave, Edge, Arc, Chromium, Vivaldi и Opera. Firefox виден в списке, но текущий AppleScript-способ не умеет надежно читать его активную вкладку; для него лучше подойдет отдельное расширение.",
+        "help.test.title": "Тест заставки",
+        "help.test.text": "Тест показывает оверлей примерно на 20 секунд, но клики проходят сквозь него. Закрыть тест можно кнопкой Остановить тест, из меню-бара или клавишей Esc, если macOS передала ее приложению.",
+        "help.notDoing.title": "Что приложение не делает",
+        "help.notDoing.text": "PurrBreak не блокирует сайты на уровне сети, не следит за всеми приложениями и не отправляет данные наружу. Это мягкий локальный таймер для YouTube-пауз.",
+        "help.backgroundMusic.title": "YouTube-музыка фоном",
+        "help.backgroundMusic.text": "Если ты привык держать YouTube как фоновый музыкальный плеер во время работы, PurrBreak будет считать это просмотром YouTube. Текущая версия не умеет надежно отличать музыку от залипания; лучше заранее скачать плейлист или использовать отдельное музыкальное приложение.",
+        "overlay.breakTitle": "Пять минут перезагрузки",
+        "overlay.previewTitle": "Тест заставки",
+        "overlay.breakMessage": "Кот занял экран. YouTube подождет.",
+        "overlay.previewMessage": "Это предпросмотр: клики проходят сквозь оверлей. Esc закрывает.",
+        "menu.openSettings": "Открыть настройки",
+        "menu.screensaver": "Заставка",
+        "menu.tooltip": "PurrBreak: %@ %@. Просмотрено %@ / %@",
+        "window.help": "Справка PurrBreak"
+    ]
+
+    private static let en: [String: String] = [
+        "app.subtitle": "A gentle YouTube timeout",
+        "language": "Language",
+        "theme.sleep": "Orange Nap",
+        "theme.moon": "Moonlit Doze",
+        "theme.rain": "Rainy Window",
+        "theme.space": "Cosmic Sleep",
+        "status.breakRemaining": "Break ends in",
+        "status.previewRemaining": "Preview ends in",
+        "status.untilBreak": "Until break",
+        "monitor.ready": "Ready to watch YouTube",
+        "monitor.noBrowser": "Browser not found",
+        "monitor.breakInProgress": "Break in progress",
+        "monitor.accessNeeded": "Automation access needed: %@",
+        "monitor.unsupported": "%@ is not supported yet",
+        "monitor.browserNotFront": "No supported browser in front",
+        "monitor.waitingYouTube": "Waiting for active YouTube",
+        "monitor.youtubeActive": "YouTube is active",
+        "monitor.shortsActive": "YouTube Shorts are active",
+        "monitor.emptyTab": "Active tab has no address",
+        "monitor.notYouTube": "Not YouTube right now",
+        "browser.state.notInstalled": "Not found",
+        "browser.state.waiting": "Waiting to check",
+        "browser.state.connected": "Connected",
+        "browser.state.needsPermission": "Needs access",
+        "browser.state.unsupported": "Not supported yet",
+        "browser.detail.notInstalled": "This app was not found on this Mac.",
+        "browser.detail.waiting": "Open YouTube in this browser so macOS can ask for access.",
+        "browser.detail.connected": "PurrBreak can read the active tab URL.",
+        "browser.detail.unsupported": "Needs a separate tracking method, such as a browser extension.",
+        "browser.detail.unsupportedSpecific": "%@ will work best through an extension or another fallback.",
+        "browser.error.unsupported": "%@: cannot read the active tab URL yet",
+        "browser.error.noAccess": "%@: macOS has not allowed access to the active tab yet",
+        "settings.youtubeActive": "YouTube is active",
+        "settings.youtubeInactive": "YouTube is not active",
+        "settings.watched": "Watched",
+        "settings.screensaver": "Screensaver",
+        "settings.limit": "YouTube limit",
+        "settings.shortsLimit": "Shorts limit",
+        "settings.breakLength": "Break length",
+        "settings.purrSound": "Purring during breaks",
+        "settings.purrVolume": "Purr volume",
+        "settings.minutes": "%d min",
+        "settings.testStop": "Stop preview",
+        "settings.test": "Preview break",
+        "settings.startBreak": "Break now",
+        "settings.resetCounter": "Reset counter",
+        "settings.browserCheck": "Check browsers",
+        "settings.help": "Help",
+        "settings.quit": "Quit",
+        "stats.today": "Today YouTube: %@ • Breaks: %d • Saved: %@",
+        "duration.hoursMinutes": "%dh %02dm",
+        "duration.minutes": "%dm",
+        "browserCheck.firstTitle": "Browser Access",
+        "browserCheck.title": "Check Browsers",
+        "browserCheck.subtitle": "The checkmark appears automatically when PurrBreak can read the active tab",
+        "browserCheck.firstRun": "First launch",
+        "browserCheck.firstRunText": "There is nothing to connect manually. Open YouTube in Chrome, Safari, or Yandex Browser. When macOS asks for Automation access, allow it. If the prompt does not appear or you denied it by accident, open macOS permissions below.",
+        "browserCheck.openPermissions": "Open macOS Permissions",
+        "browserCheck.openMainSettings": "Open Settings",
+        "browserCheck.done": "Done",
+        "browserCheck.access": "Browser access",
+        "browserCheck.explainer": "This is not a manual setup screen. It only shows whether PurrBreak could read the active tab. If you already see a checkmark, you are done.",
+        "browserCheck.hidden": "Hidden browsers not installed: %d.",
+        "help.title": "How PurrBreak Works",
+        "help.subtitle": "A quick guide to timers, breaks, and permissions",
+        "help.whatCounts.title": "What gets counted",
+        "help.whatCounts.text": "Every second, PurrBreak checks which browser is active and reads the active tab URL. The timer only runs when the active tab is on youtube.com or youtu.be.",
+        "help.whenBreak.title": "When the break appears",
+        "help.whenBreak.text": "When your watch limit is reached, the app shows a full-screen pause with the selected cat animation. By default, regular YouTube is limited to 20 minutes, Shorts to 5 minutes, followed by a 5-minute break. After the break ends, the counter resets.",
+        "help.automation.title": "Why Automation is needed",
+        "help.automation.text": "macOS requires Automation permission so the app can ask the browser for the active tab address. PurrBreak does not read history, passwords, page contents, or personal data.",
+        "help.browserStatus.title": "Browser status",
+        "help.browserStatus.text": "The Check Browsers window shows whether PurrBreak can read the active tab. If you already see a checkmark, you are done; macOS settings are only needed after a denied or failed permission check.",
+        "help.supported.title": "Supported browsers",
+        "help.supported.text": "Safari, Chrome, Yandex Browser, Brave, Edge, Arc, Chromium, Vivaldi, and Opera are supported. Firefox appears in the list, but the current AppleScript method cannot reliably read its active tab; an extension would be a better fit.",
+        "help.test.title": "Break preview",
+        "help.test.text": "The preview shows the overlay for about 20 seconds without intercepting clicks. You can close it with Stop Preview, from the menu bar, or with Esc if macOS passes the key to the app.",
+        "help.notDoing.title": "What the app does not do",
+        "help.notDoing.text": "PurrBreak does not block websites at the network level, monitor all apps, or send data anywhere. It is a gentle local timer for YouTube breaks.",
+        "help.backgroundMusic.title": "YouTube music in the background",
+        "help.backgroundMusic.text": "If you use YouTube as a background music player while working, PurrBreak will count that as YouTube time. The current version cannot reliably distinguish music from watching; it is better to download a playlist in advance or use a dedicated music app.",
+        "overlay.breakTitle": "Five-Minute Reset",
+        "overlay.previewTitle": "Break Preview",
+        "overlay.breakMessage": "The cat has taken the screen. YouTube can wait.",
+        "overlay.previewMessage": "This is a preview: clicks pass through the overlay. Esc closes it.",
+        "menu.openSettings": "Open Settings",
+        "menu.screensaver": "Screensaver",
+        "menu.tooltip": "PurrBreak: %@ %@. Watched %@ / %@",
+        "window.help": "PurrBreak Help"
+    ]
+
+    static func text(_ key: String, language: AppLanguage) -> String {
+        let table = language == .ru ? ru : en
+        return table[key] ?? ru[key] ?? key
+    }
+
+    static func text(_ key: String, language: AppLanguage, _ args: CVarArg...) -> String {
+        text(key, language: language, arguments: args)
+    }
+
+    static func text(_ key: String, language: AppLanguage, arguments: [CVarArg]) -> String {
+        String(format: text(key, language: language), locale: language.locale, arguments: arguments)
+    }
 }
 
 private struct BreakTheme: Identifiable, Equatable {
@@ -30,40 +277,52 @@ private struct BreakTheme: Identifiable, Equatable {
     static func matching(_ id: String) -> BreakTheme {
         all.first { $0.id == id } ?? fallback
     }
+
+    func displayName(language: AppLanguage) -> String {
+        L10n.text("theme.\(id)", language: language)
+    }
 }
 
 private struct PurrSettings: Equatable {
     var watchLimitMinutes: Int
+    var shortsLimitMinutes: Int
     var breakMinutes: Int
     var soundEnabled: Bool
     var purrVolume: Double
     var screensaverThemeID: String
+    var language: AppLanguage
 
     static func load() -> PurrSettings {
         let defaults = UserDefaults.standard
 
         let watchLimit = defaults.object(forKey: DefaultsKey.watchLimitMinutes) as? Int ?? 20
+        let shortsLimit = defaults.object(forKey: DefaultsKey.shortsLimitMinutes) as? Int ?? 5
         let breakLength = defaults.object(forKey: DefaultsKey.breakMinutes) as? Int ?? 5
         let sound = defaults.object(forKey: DefaultsKey.soundEnabled) as? Bool ?? true
         let volume = defaults.object(forKey: DefaultsKey.purrVolume) as? Double ?? 0.65
         let themeID = defaults.string(forKey: DefaultsKey.screensaverThemeID) ?? BreakTheme.fallback.id
+        let language = AppLanguage.matching(defaults.string(forKey: DefaultsKey.languageCode))
 
         return PurrSettings(
             watchLimitMinutes: max(1, min(watchLimit, 240)),
+            shortsLimitMinutes: max(1, min(shortsLimit, 120)),
             breakMinutes: max(1, min(breakLength, 60)),
             soundEnabled: sound,
             purrVolume: max(0.0, min(volume, 1.0)),
-            screensaverThemeID: BreakTheme.matching(themeID).id
+            screensaverThemeID: BreakTheme.matching(themeID).id,
+            language: language
         )
     }
 
     func save() {
         let defaults = UserDefaults.standard
         defaults.set(watchLimitMinutes, forKey: DefaultsKey.watchLimitMinutes)
+        defaults.set(shortsLimitMinutes, forKey: DefaultsKey.shortsLimitMinutes)
         defaults.set(breakMinutes, forKey: DefaultsKey.breakMinutes)
         defaults.set(soundEnabled, forKey: DefaultsKey.soundEnabled)
         defaults.set(purrVolume, forKey: DefaultsKey.purrVolume)
         defaults.set(screensaverThemeID, forKey: DefaultsKey.screensaverThemeID)
+        defaults.set(language.rawValue, forKey: DefaultsKey.languageCode)
     }
 }
 
@@ -76,41 +335,66 @@ private final class PurrModel: ObservableObject {
     }
 
     @Published var watchedSeconds: Int = 0
+    @Published var watchedShortsSeconds: Int = 0
     @Published var isWatchingYouTube = false
-    @Published var activeBrowserName = "Браузер не найден"
+    @Published var isWatchingShorts = false
+    @Published var activeBrowserName: String
     @Published var currentURL = ""
-    @Published var monitorMessage = "Готов следить за YouTube"
+    @Published var monitorMessage: String
     @Published var isOnBreak = false
     @Published var isPreviewingBreak = false
     @Published var breakRemainingSeconds = 0
     @Published var browserStatuses: [BrowserStatus]
+    @Published var dailyYouTubeSeconds: Int
+    @Published var dailyBreakCount: Int
+    @Published var dailySavedSeconds: Int
 
     var onSettingsChanged: ((PurrSettings) -> Void)?
+    private var dailyStatsDate: String
 
     init(settings: PurrSettings) {
         self.settings = settings
+        self.activeBrowserName = L10n.text("monitor.noBrowser", language: settings.language)
+        self.monitorMessage = L10n.text("monitor.ready", language: settings.language)
         self.browserStatuses = BrowserStatus.initialStatuses()
+        let stats = Self.loadDailyStats()
+        self.dailyStatsDate = stats.date
+        self.dailyYouTubeSeconds = stats.youtubeSeconds
+        self.dailyBreakCount = stats.breakCount
+        self.dailySavedSeconds = stats.savedSeconds
     }
 
     var watchLimitSeconds: Int {
         settings.watchLimitMinutes * 60
     }
 
+    var shortsLimitSeconds: Int {
+        settings.shortsLimitMinutes * 60
+    }
+
+    var activeWatchedSeconds: Int {
+        isWatchingShorts ? watchedShortsSeconds : watchedSeconds
+    }
+
+    var activeLimitSeconds: Int {
+        isWatchingShorts ? shortsLimitSeconds : watchLimitSeconds
+    }
+
     var progress: Double {
-        guard watchLimitSeconds > 0 else { return 0 }
-        return min(1.0, Double(watchedSeconds) / Double(watchLimitSeconds))
+        guard activeLimitSeconds > 0 else { return 0 }
+        return min(1.0, Double(activeWatchedSeconds) / Double(activeLimitSeconds))
     }
 
     var watchedTimeText: String {
-        Self.clockText(seconds: watchedSeconds)
+        Self.clockText(seconds: activeWatchedSeconds)
     }
 
     var limitText: String {
-        Self.clockText(seconds: watchLimitSeconds)
+        Self.clockText(seconds: activeLimitSeconds)
     }
 
     var remainingUntilBreakSeconds: Int {
-        max(0, watchLimitSeconds - watchedSeconds)
+        max(0, activeLimitSeconds - activeWatchedSeconds)
     }
 
     var remainingUntilBreakText: String {
@@ -127,18 +411,27 @@ private final class PurrModel: ObservableObject {
 
     var statusCountdownLabel: String {
         if isOnBreak {
-            return "До конца паузы"
+            return tr("status.breakRemaining")
         }
 
         if isPreviewingBreak {
-            return "До конца теста"
+            return tr("status.previewRemaining")
         }
 
-        return "До заставки"
+        return tr("status.untilBreak")
     }
 
     var selectedTheme: BreakTheme {
         BreakTheme.matching(settings.screensaverThemeID)
+    }
+
+    var dailyStatsText: String {
+        tr(
+            "stats.today",
+            Self.durationText(seconds: dailyYouTubeSeconds, language: language),
+            dailyBreakCount,
+            Self.durationText(seconds: dailySavedSeconds, language: language)
+        )
     }
 
     static func clockText(seconds: Int) -> String {
@@ -146,24 +439,45 @@ private final class PurrModel: ObservableObject {
         return String(format: "%02d:%02d", clamped / 60, clamped % 60)
     }
 
+    static func durationText(seconds: Int, language: AppLanguage) -> String {
+        let minutes = max(0, Int((Double(seconds) / 60.0).rounded()))
+        if minutes >= 60 {
+            return L10n.text("duration.hoursMinutes", language: language, minutes / 60, minutes % 60)
+        }
+
+        return L10n.text("duration.minutes", language: language, minutes)
+    }
+
+    var language: AppLanguage {
+        settings.language
+    }
+
+    func tr(_ key: String) -> String {
+        L10n.text(key, language: language)
+    }
+
+    func tr(_ key: String, _ args: CVarArg...) -> String {
+        L10n.text(key, language: language, arguments: args)
+    }
+
     func markBrowserConnected(bundleID: String, displayName: String) {
         updateBrowserStatus(bundleID: bundleID) { status in
             status.state = .connected
-            status.detail = "URL активной вкладки читается."
+            status.detail = .connected
         }
     }
 
     func markBrowserNeedsPermission(bundleID: String, displayName: String, message: String) {
         updateBrowserStatus(bundleID: bundleID) { status in
             status.state = .needsPermission
-            status.detail = message
+            status.detail = .needsPermission(message)
         }
     }
 
     func markBrowserUnsupported(bundleID: String, displayName: String) {
         updateBrowserStatus(bundleID: bundleID) { status in
             status.state = .unsupported
-            status.detail = "\(displayName) пока лучше подключать через расширение или отдельный fallback."
+            status.detail = .unsupportedSpecific(displayName)
         }
     }
 
@@ -175,6 +489,79 @@ private final class PurrModel: ObservableObject {
         var status = browserStatuses[index]
         mutate(&status)
         browserStatuses[index] = status
+    }
+
+    func recordYouTubeWatch(kind: YouTubeKind, elapsed: Int) {
+        resetDailyStatsIfNeeded()
+        dailyYouTubeSeconds += elapsed
+
+        switch kind {
+        case .regular:
+            watchedSeconds += elapsed
+        case .shorts:
+            watchedShortsSeconds += elapsed
+        }
+
+        saveDailyStats()
+    }
+
+    func resetCounters() {
+        watchedSeconds = 0
+        watchedShortsSeconds = 0
+        isWatchingShorts = false
+    }
+
+    func recordBreakStarted(seconds: Int) {
+        resetDailyStatsIfNeeded()
+        dailyBreakCount += 1
+        dailySavedSeconds += seconds
+        saveDailyStats()
+    }
+
+    private static func currentStatsDateString() -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
+    }
+
+    private static func loadDailyStats() -> (date: String, youtubeSeconds: Int, breakCount: Int, savedSeconds: Int) {
+        let defaults = UserDefaults.standard
+        let today = currentStatsDateString()
+        guard defaults.string(forKey: DefaultsKey.statsDate) == today else {
+            defaults.set(today, forKey: DefaultsKey.statsDate)
+            defaults.set(0, forKey: DefaultsKey.dailyYouTubeSeconds)
+            defaults.set(0, forKey: DefaultsKey.dailyBreakCount)
+            defaults.set(0, forKey: DefaultsKey.dailySavedSeconds)
+            return (today, 0, 0, 0)
+        }
+
+        return (
+            today,
+            defaults.object(forKey: DefaultsKey.dailyYouTubeSeconds) as? Int ?? 0,
+            defaults.object(forKey: DefaultsKey.dailyBreakCount) as? Int ?? 0,
+            defaults.object(forKey: DefaultsKey.dailySavedSeconds) as? Int ?? 0
+        )
+    }
+
+    private func resetDailyStatsIfNeeded() {
+        let today = Self.currentStatsDateString()
+        guard dailyStatsDate != today else { return }
+
+        dailyStatsDate = today
+        dailyYouTubeSeconds = 0
+        dailyBreakCount = 0
+        dailySavedSeconds = 0
+        saveDailyStats()
+    }
+
+    private func saveDailyStats() {
+        let defaults = UserDefaults.standard
+        defaults.set(Self.currentStatsDateString(), forKey: DefaultsKey.statsDate)
+        defaults.set(dailyYouTubeSeconds, forKey: DefaultsKey.dailyYouTubeSeconds)
+        defaults.set(dailyBreakCount, forKey: DefaultsKey.dailyBreakCount)
+        defaults.set(dailySavedSeconds, forKey: DefaultsKey.dailySavedSeconds)
     }
 }
 
@@ -221,6 +608,32 @@ private enum BrowserConnectionState: Equatable {
     case unsupported
 }
 
+private enum BrowserStatusDetail: Equatable {
+    case notInstalled
+    case waiting
+    case connected
+    case unsupported
+    case unsupportedSpecific(String)
+    case needsPermission(String)
+
+    func text(language: AppLanguage) -> String {
+        switch self {
+        case .notInstalled:
+            return L10n.text("browser.detail.notInstalled", language: language)
+        case .waiting:
+            return L10n.text("browser.detail.waiting", language: language)
+        case .connected:
+            return L10n.text("browser.detail.connected", language: language)
+        case .unsupported:
+            return L10n.text("browser.detail.unsupported", language: language)
+        case .unsupportedSpecific(let browserName):
+            return L10n.text("browser.detail.unsupportedSpecific", language: language, browserName)
+        case .needsPermission(let message):
+            return message
+        }
+    }
+}
+
 private struct BrowserStatus: Identifiable, Equatable {
     let id: String
     let displayName: String
@@ -228,20 +641,20 @@ private struct BrowserStatus: Identifiable, Equatable {
     let isInstalled: Bool
     let canReadURL: Bool
     var state: BrowserConnectionState
-    var detail: String
+    var detail: BrowserStatusDetail
 
-    var stateText: String {
+    func stateText(language: AppLanguage) -> String {
         switch state {
         case .notInstalled:
-            return "Не найден"
+            return L10n.text("browser.state.notInstalled", language: language)
         case .waiting:
-            return "Ожидает проверки"
+            return L10n.text("browser.state.waiting", language: language)
         case .connected:
-            return "Подключен"
+            return L10n.text("browser.state.connected", language: language)
         case .needsPermission:
-            return "Нужен доступ"
+            return L10n.text("browser.state.needsPermission", language: language)
         case .unsupported:
-            return "Пока не поддерживается"
+            return L10n.text("browser.state.unsupported", language: language)
         }
     }
 
@@ -279,17 +692,17 @@ private struct BrowserStatus: Identifiable, Equatable {
         BrowserDescriptor.all.map { descriptor in
             let isInstalled = NSWorkspace.shared.urlForApplication(withBundleIdentifier: descriptor.bundleID) != nil
             let state: BrowserConnectionState
-            let detail: String
+            let detail: BrowserStatusDetail
 
             if !isInstalled {
                 state = .notInstalled
-                detail = "Приложение не найдено на этом Mac."
+                detail = .notInstalled
             } else if !descriptor.canReadURL {
                 state = .unsupported
-                detail = "Нужен отдельный способ отслеживания, например расширение."
+                detail = .unsupported
             } else {
                 state = .waiting
-                detail = "Открой YouTube в этом браузере, чтобы macOS запросила доступ."
+                detail = .waiting
             }
 
             return BrowserStatus(
@@ -309,6 +722,11 @@ private struct BrowserSnapshot {
     let browserName: String
     let bundleID: String
     let url: String
+}
+
+private enum YouTubeKind {
+    case regular
+    case shorts
 }
 
 private enum BrowserReadError: Error, CustomStringConvertible {
@@ -334,13 +752,13 @@ private enum BrowserReadError: Error, CustomStringConvertible {
         case .browserError(_, _, let message):
             return message
         case .unsupported(_, let browserName):
-            return "\(browserName): пока не умею читать URL активной вкладки"
+            return L10n.text("browser.error.unsupported", language: .ru, browserName)
         }
     }
 }
 
 private final class BrowserURLReader {
-    func frontmostSnapshot() -> Result<BrowserSnapshot?, BrowserReadError> {
+    func frontmostSnapshot(language: AppLanguage) -> Result<BrowserSnapshot?, BrowserReadError> {
         guard let app = NSWorkspace.shared.frontmostApplication,
               let bundleID = app.bundleIdentifier else {
             return .success(nil)
@@ -360,7 +778,7 @@ private final class BrowserURLReader {
             return .failure(.browserError(
                 bundleID: browser.bundleID,
                 browserName: browser.displayName,
-                message: errorMessage(from: error, browserName: browser.displayName)
+                message: errorMessage(from: error, browserName: browser.displayName, language: language)
             ))
         }
 
@@ -389,12 +807,12 @@ private final class BrowserURLReader {
         }
     }
 
-    private func errorMessage(from error: NSDictionary?, browserName: String) -> String {
+    private func errorMessage(from error: NSDictionary?, browserName: String, language: AppLanguage) -> String {
         if let message = error?[NSAppleScript.errorMessage] as? String, !message.isEmpty {
             return "\(browserName): \(message)"
         }
 
-        return "\(browserName): macOS пока не дала доступ к активной вкладке"
+        return L10n.text("browser.error.noAccess", language: language, browserName)
     }
 }
 
@@ -421,7 +839,7 @@ private final class YouTubeMonitor {
     }
 
     func resetCounter() {
-        model.watchedSeconds = 0
+        model.resetCounters()
     }
 
     private func tick() {
@@ -431,26 +849,28 @@ private final class YouTubeMonitor {
 
         guard !model.isOnBreak else {
             model.isWatchingYouTube = false
-            model.monitorMessage = "Идет пауза"
+            model.isWatchingShorts = false
+            model.monitorMessage = model.tr("monitor.breakInProgress")
             return
         }
 
-        switch reader.frontmostSnapshot() {
+        switch reader.frontmostSnapshot(language: model.language) {
         case .success(let snapshot):
             update(with: snapshot, elapsed: elapsed)
         case .failure(let error):
             model.isWatchingYouTube = false
+            model.isWatchingShorts = false
             model.currentURL = ""
 
             switch error {
             case .browserError(let bundleID, let browserName, let message):
                 model.activeBrowserName = browserName
                 model.markBrowserNeedsPermission(bundleID: bundleID, displayName: browserName, message: message)
-                model.monitorMessage = "Нужен доступ Automation: \(message)"
+                model.monitorMessage = model.tr("monitor.accessNeeded", message)
             case .unsupported(let bundleID, let browserName):
                 model.activeBrowserName = browserName
                 model.markBrowserUnsupported(bundleID: bundleID, displayName: browserName)
-                model.monitorMessage = "\(browserName) пока не поддерживается"
+                model.monitorMessage = model.tr("monitor.unsupported", browserName)
             }
         }
 
@@ -460,9 +880,10 @@ private final class YouTubeMonitor {
     private func update(with snapshot: BrowserSnapshot?, elapsed: Int) {
         guard let snapshot else {
             model.isWatchingYouTube = false
+            model.isWatchingShorts = false
             model.currentURL = ""
-            model.activeBrowserName = "Браузер не на переднем плане"
-            model.monitorMessage = "Жду активный YouTube"
+            model.activeBrowserName = model.tr("monitor.browserNotFront")
+            model.monitorMessage = model.tr("monitor.waitingYouTube")
             return
         }
 
@@ -470,30 +891,44 @@ private final class YouTubeMonitor {
         model.currentURL = snapshot.url
         model.markBrowserConnected(bundleID: snapshot.bundleID, displayName: snapshot.browserName)
 
-        if Self.isYouTubeURL(snapshot.url) {
+        if let kind = Self.youtubeKind(for: snapshot.url) {
             model.isWatchingYouTube = true
-            model.watchedSeconds += elapsed
-            model.monitorMessage = "YouTube активен"
+            model.isWatchingShorts = kind == .shorts
+            model.recordYouTubeWatch(kind: kind, elapsed: elapsed)
+            model.monitorMessage = kind == .shorts ? model.tr("monitor.shortsActive") : model.tr("monitor.youtubeActive")
 
-            if model.watchedSeconds >= model.watchLimitSeconds {
+            let reachedLimit = kind == .shorts
+                ? model.watchedShortsSeconds >= model.shortsLimitSeconds
+                : model.watchedSeconds >= model.watchLimitSeconds
+
+            if reachedLimit {
                 onLimitReached?()
             }
         } else {
             model.isWatchingYouTube = false
-            model.monitorMessage = snapshot.url.isEmpty ? "Вкладка без адреса" : "Сейчас не YouTube"
+            model.isWatchingShorts = false
+            model.monitorMessage = snapshot.url.isEmpty ? model.tr("monitor.emptyTab") : model.tr("monitor.notYouTube")
         }
     }
 
-    private static func isYouTubeURL(_ rawURL: String) -> Bool {
+    private static func youtubeKind(for rawURL: String) -> YouTubeKind? {
         guard let components = URLComponents(string: rawURL.lowercased()),
               let host = components.host else {
-            return false
+            return nil
         }
 
         let normalizedHost = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-        return normalizedHost == "youtube.com"
+        let isYouTube = normalizedHost == "youtube.com"
             || normalizedHost.hasSuffix(".youtube.com")
             || normalizedHost == "youtu.be"
+
+        guard isYouTube else { return nil }
+
+        if normalizedHost != "youtu.be", components.path.lowercased().hasPrefix("/shorts") {
+            return .shorts
+        }
+
+        return .regular
     }
 }
 
@@ -525,6 +960,7 @@ private final class BreakManager {
         let seconds = max(60, model.settings.breakMinutes * 60)
         model.isOnBreak = true
         model.breakRemainingSeconds = seconds
+        model.recordBreakStarted(seconds: seconds)
         onStatusChanged?()
         breakEndDate = Date().addingTimeInterval(TimeInterval(seconds))
 
@@ -803,6 +1239,61 @@ private extension Data {
     }
 }
 
+private enum AppIconStore {
+    static func image() -> NSImage? {
+        if let url = Bundle.main.url(forResource: "app-icon-mark", withExtension: "png") {
+            return NSImage(contentsOf: url)
+        }
+
+        #if SWIFT_PACKAGE
+        if let url = Bundle.module.url(forResource: "app-icon-mark", withExtension: "png") {
+            return NSImage(contentsOf: url)
+        }
+        #endif
+
+        return nil
+    }
+
+    static func resizedImage(size: NSSize) -> NSImage? {
+        guard let source = image() else { return nil }
+
+        let image = NSImage(size: size)
+        image.lockFocus()
+        NSGraphicsContext.current?.imageInterpolation = .high
+        source.draw(
+            in: NSRect(origin: .zero, size: size),
+            from: NSRect(origin: .zero, size: source.size),
+            operation: .sourceOver,
+            fraction: 1.0
+        )
+        image.unlockFocus()
+        return image
+    }
+}
+
+private struct AppIconMark: View {
+    let size: CGFloat
+
+    var body: some View {
+        Group {
+            if let image = AppIconStore.image() {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFit()
+            } else {
+                Image(systemName: "pawprint.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.accentColor)
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
 private struct SettingsView: View {
     @ObservedObject var model: PurrModel
     let startBreak: () -> Void
@@ -816,22 +1307,19 @@ private struct SettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .center, spacing: 14) {
-                Image(systemName: "pawprint.fill")
-                    .font(.system(size: 34, weight: .semibold))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(Color.accentColor)
+                AppIconMark(size: 58)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("PurrBreak")
-                        .font(.system(size: 28, weight: .bold))
-                    Text("Мягкий тайм-аут для YouTube")
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("PurrBreak")
+                            .font(.system(size: 28, weight: .bold))
+                        Text(model.tr("app.subtitle"))
+                            .foregroundStyle(.secondary)
+                    }
                 }
-            }
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text(model.isWatchingYouTube ? "YouTube идет" : "YouTube не активен")
+                    Text(model.isWatchingYouTube ? model.tr("settings.youtubeActive") : model.tr("settings.youtubeInactive"))
                         .font(.headline)
                     Spacer()
                     Text("\(model.statusCountdownLabel): \(model.statusCountdownText)")
@@ -843,7 +1331,7 @@ private struct SettingsView: View {
                     .progressViewStyle(.linear)
 
                 HStack {
-                    Text("Просмотрено")
+                    Text(model.tr("settings.watched"))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -851,6 +1339,11 @@ private struct SettingsView: View {
                         .font(.system(.footnote, design: .monospaced))
                         .foregroundStyle(.secondary)
                 }
+
+                Text(model.dailyStatsText)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
 
                 Text(model.monitorMessage)
                     .font(.footnote)
@@ -861,25 +1354,36 @@ private struct SettingsView: View {
             Divider()
 
             VStack(alignment: .leading, spacing: 14) {
-                Picker("Заставка", selection: binding(\.screensaverThemeID)) {
+                Picker(model.tr("settings.screensaver"), selection: binding(\.screensaverThemeID)) {
                     ForEach(BreakTheme.all) { theme in
-                        Text(theme.displayName).tag(theme.id)
+                        Text(theme.displayName(language: model.language)).tag(theme.id)
                     }
                 }
                 .pickerStyle(.menu)
 
+                Picker(model.tr("language"), selection: binding(\.language)) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName).tag(language)
+                    }
+                }
+                .pickerStyle(.segmented)
+
                 Stepper(value: binding(\.watchLimitMinutes), in: 1...240) {
-                    settingRow(title: "Лимит YouTube", value: "\(model.settings.watchLimitMinutes) мин")
+                    settingRow(title: model.tr("settings.limit"), value: model.tr("settings.minutes", model.settings.watchLimitMinutes))
+                }
+
+                Stepper(value: binding(\.shortsLimitMinutes), in: 1...120) {
+                    settingRow(title: model.tr("settings.shortsLimit"), value: model.tr("settings.minutes", model.settings.shortsLimitMinutes))
                 }
 
                 Stepper(value: binding(\.breakMinutes), in: 1...60) {
-                    settingRow(title: "Длина паузы", value: "\(model.settings.breakMinutes) мин")
+                    settingRow(title: model.tr("settings.breakLength"), value: model.tr("settings.minutes", model.settings.breakMinutes))
                 }
 
-                Toggle("Мурчание во время паузы", isOn: binding(\.soundEnabled))
+                Toggle(model.tr("settings.purrSound"), isOn: binding(\.soundEnabled))
 
                 VStack(alignment: .leading, spacing: 6) {
-                    settingRow(title: "Громкость мурчания", value: "\(Int(model.settings.purrVolume * 100))%")
+                    settingRow(title: model.tr("settings.purrVolume"), value: "\(Int(model.settings.purrVolume * 100))%")
                     Slider(value: binding(\.purrVolume), in: 0...1)
                         .disabled(!model.settings.soundEnabled)
                 }
@@ -896,7 +1400,7 @@ private struct SettingsView: View {
                     }
                 } label: {
                     Label(
-                        model.isPreviewingBreak ? "Остановить тест" : "Тест заставки",
+                        model.isPreviewingBreak ? model.tr("settings.testStop") : model.tr("settings.test"),
                         systemImage: model.isPreviewingBreak ? "stop.circle.fill" : "play.display"
                     )
                 }
@@ -906,13 +1410,13 @@ private struct SettingsView: View {
                 Button {
                     startBreak()
                 } label: {
-                    Label("Блокировка сейчас", systemImage: "moon.zzz.fill")
+                    Label(model.tr("settings.startBreak"), systemImage: "moon.zzz.fill")
                 }
 
                 Button {
                     resetCounter()
                 } label: {
-                    Label("Сбросить счетчик", systemImage: "arrow.counterclockwise")
+                    Label(model.tr("settings.resetCounter"), systemImage: "arrow.counterclockwise")
                 }
             }
 
@@ -920,7 +1424,7 @@ private struct SettingsView: View {
                 Button {
                     showBrowserSettings()
                 } label: {
-                    Label("Проверка браузеров", systemImage: "globe")
+                    Label(model.tr("settings.browserCheck"), systemImage: "globe")
                 }
 
                 Spacer()
@@ -928,13 +1432,13 @@ private struct SettingsView: View {
                 Button {
                     showHelp()
                 } label: {
-                    Label("Справка", systemImage: "questionmark.circle")
+                    Label(model.tr("settings.help"), systemImage: "questionmark.circle")
                 }
 
                 Button {
                     quit()
                 } label: {
-                    Label("Выйти", systemImage: "xmark.circle")
+                    Label(model.tr("settings.quit"), systemImage: "xmark.circle")
                 }
             }
         }
@@ -975,24 +1479,21 @@ private struct BrowserSettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(alignment: .center, spacing: 14) {
-                    Image(systemName: "globe.badge.chevron.backward")
-                        .font(.system(size: 32, weight: .semibold))
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(Color.accentColor)
+                    AppIconMark(size: 48)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(isFirstRun ? "Доступ к браузеру" : "Проверка браузеров")
+                        Text(isFirstRun ? model.tr("browserCheck.firstTitle") : model.tr("browserCheck.title"))
                             .font(.system(size: 26, weight: .bold))
-                        Text("Галочка появляется сама, когда PurrBreak успешно читает активную вкладку")
+                        Text(model.tr("browserCheck.subtitle"))
                             .foregroundStyle(.secondary)
                     }
                 }
 
                 if isFirstRun {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Первый запуск")
+                        Text(model.tr("browserCheck.firstRun"))
                             .font(.headline)
-                        Text("Ничего заранее подключать не нужно. Открой YouTube в Chrome, Safari или Yandex Browser. Когда macOS спросит Automation, разреши доступ. Если запроса нет или ты случайно отказал, открой системные разрешения кнопкой ниже.")
+                        Text(model.tr("browserCheck.firstRunText"))
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -1004,7 +1505,8 @@ private struct BrowserSettingsView: View {
                 }
 
                 BrowserStatusPanel(
-                    statuses: model.browserStatuses
+                    statuses: model.browserStatuses,
+                    language: model.language
                 )
 
                 Divider()
@@ -1013,7 +1515,7 @@ private struct BrowserSettingsView: View {
                     Button {
                         openAutomationSettings()
                     } label: {
-                        Label("Открыть разрешения macOS", systemImage: "gearshape")
+                        Label(model.tr("browserCheck.openPermissions"), systemImage: "gearshape")
                     }
 
                     Spacer()
@@ -1023,14 +1525,14 @@ private struct BrowserSettingsView: View {
                             close()
                             openMainSettings()
                         } label: {
-                            Label("Перейти к настройкам", systemImage: "arrow.right.circle.fill")
+                            Label(model.tr("browserCheck.openMainSettings"), systemImage: "arrow.right.circle.fill")
                         }
                         .buttonStyle(.borderedProminent)
                     } else {
                         Button {
                             close()
                         } label: {
-                            Label("Готово", systemImage: "checkmark.circle")
+                            Label(model.tr("browserCheck.done"), systemImage: "checkmark.circle")
                         }
                         .buttonStyle(.borderedProminent)
                     }
@@ -1045,6 +1547,7 @@ private struct BrowserSettingsView: View {
 
 private struct BrowserStatusPanel: View {
     let statuses: [BrowserStatus]
+    let language: AppLanguage
 
     private var visibleStatuses: [BrowserStatus] {
         let visible = statuses.filter { status in
@@ -1060,22 +1563,22 @@ private struct BrowserStatusPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Доступ к браузерам", systemImage: "globe")
+            Label(L10n.text("browserCheck.access", language: language), systemImage: "globe")
                 .font(.headline)
 
-            Text("Это не ручная настройка. Статус просто показывает, получилось ли у PurrBreak прочитать активную вкладку. Если галочка уже есть, делать ничего не нужно.")
+            Text(L10n.text("browserCheck.explainer", language: language))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(spacing: 8) {
                 ForEach(visibleStatuses) { status in
-                    BrowserStatusRow(status: status)
+                    BrowserStatusRow(status: status, language: language)
                 }
             }
 
             if hiddenCount > 0 {
-                Text("Неустановленные браузеры скрыты: \(hiddenCount).")
+                Text(L10n.text("browserCheck.hidden", language: language, hiddenCount))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1085,6 +1588,7 @@ private struct BrowserStatusPanel: View {
 
 private struct BrowserStatusRow: View {
     let status: BrowserStatus
+    let language: AppLanguage
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -1100,13 +1604,13 @@ private struct BrowserStatusRow: View {
 
                     Spacer()
 
-                    Text(status.stateText)
+                    Text(status.stateText(language: language))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
 
-                Text(status.detail)
+                Text(status.detail.text(language: language))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1122,62 +1626,68 @@ private struct BrowserStatusRow: View {
 }
 
 private struct HelpView: View {
+    @ObservedObject var model: PurrModel
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 12) {
-                    Image(systemName: "pawprint.fill")
-                        .font(.system(size: 30, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
+                    AppIconMark(size: 44)
 
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Как работает PurrBreak")
+                        Text(model.tr("help.title"))
                             .font(.system(size: 26, weight: .bold))
-                        Text("Коротко о счетчике, паузах и разрешениях")
+                        Text(model.tr("help.subtitle"))
                             .foregroundStyle(.secondary)
                     }
                 }
 
                 helpSection(
-                    title: "Что считает приложение",
+                    title: model.tr("help.whatCounts.title"),
                     icon: "timer",
-                    text: "PurrBreak каждую секунду смотрит, какой браузер сейчас активен, и читает URL активной вкладки. Счетчик идет только если активная вкладка открыта на youtube.com или youtu.be."
+                    text: model.tr("help.whatCounts.text")
                 )
 
                 helpSection(
-                    title: "Когда появляется заставка",
+                    title: model.tr("help.whenBreak.title"),
                     icon: "moon.zzz.fill",
-                    text: "Когда накоплен лимит просмотра, приложение показывает полноэкранную паузу с выбранной заставкой. По умолчанию лимит 20 минут, пауза 5 минут. После завершения паузы счетчик сбрасывается."
+                    text: model.tr("help.whenBreak.text")
                 )
 
                 helpSection(
-                    title: "Зачем нужен Automation",
+                    title: model.tr("help.automation.title"),
                     icon: "lock.shield",
-                    text: "macOS требует разрешение Automation, чтобы приложение могло спросить браузер об адресе активной вкладки. PurrBreak не читает историю, пароли, содержимое страниц или личные данные."
+                    text: model.tr("help.automation.text")
                 )
 
                 helpSection(
-                    title: "Статусы браузеров",
+                    title: model.tr("help.browserStatus.title"),
                     icon: "checklist",
-                    text: "Отдельное окно Проверка браузеров показывает, получилось ли прочитать активную вкладку. Если галочка уже есть, делать ничего не нужно; системные настройки нужны только при отказе или ошибке доступа."
+                    text: model.tr("help.browserStatus.text")
                 )
 
                 helpSection(
-                    title: "Какие браузеры поддерживаются",
+                    title: model.tr("help.supported.title"),
                     icon: "globe",
-                    text: "Safari, Chrome, Yandex Browser, Brave, Edge, Arc, Chromium, Vivaldi и Opera. Firefox виден в списке, но текущий AppleScript-способ не умеет надежно читать его активную вкладку; для него лучше подойдет отдельное расширение."
+                    text: model.tr("help.supported.text")
                 )
 
                 helpSection(
-                    title: "Тест заставки",
+                    title: model.tr("help.test.title"),
                     icon: "play.display",
-                    text: "Тест показывает оверлей примерно на 20 секунд, но клики проходят сквозь него. Закрыть тест можно кнопкой Остановить тест, из меню-бара или клавишей Esc, если macOS передала ее приложению."
+                    text: model.tr("help.test.text")
                 )
 
                 helpSection(
-                    title: "Что приложение не делает",
+                    title: model.tr("help.backgroundMusic.title"),
+                    icon: "music.note",
+                    text: model.tr("help.backgroundMusic.text")
+                )
+
+                helpSection(
+                    title: model.tr("help.notDoing.title"),
                     icon: "hand.raised",
-                    text: "PurrBreak не блокирует сайты на уровне сети, не следит за всеми приложениями и не отправляет данные наружу. Это мягкий локальный таймер для YouTube-пауз."
+                    text: model.tr("help.notDoing.text")
                 )
             }
             .padding(24)
@@ -1207,21 +1717,21 @@ private enum OverlayMode {
     case `break`
     case preview
 
-    var title: String {
+    func title(language: AppLanguage) -> String {
         switch self {
         case .break:
-            return "Пять минут перезагрузки"
+            return L10n.text("overlay.breakTitle", language: language)
         case .preview:
-            return "Тест заставки"
+            return L10n.text("overlay.previewTitle", language: language)
         }
     }
 
-    var message: String {
+    func message(language: AppLanguage) -> String {
         switch self {
         case .break:
-            return "Кот занял экран. YouTube подождет."
+            return L10n.text("overlay.breakMessage", language: language)
         case .preview:
-            return "Это предпросмотр: клики проходят сквозь оверлей. Esc закрывает."
+            return L10n.text("overlay.previewMessage", language: language)
         }
     }
 }
@@ -1251,7 +1761,7 @@ private struct CatBreakOverlay: View {
                     .padding(.horizontal, 34)
 
                 VStack(spacing: 10) {
-                    Text(mode.title)
+                    Text(mode.title(language: model.language))
                         .font(.system(size: 42, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.white)
                         .multilineTextAlignment(.center)
@@ -1261,7 +1771,7 @@ private struct CatBreakOverlay: View {
                         .foregroundStyle(Color(red: 1.0, green: 0.82, blue: 0.55))
                         .monospacedDigit()
 
-                    Text(mode.message)
+                    Text(mode.message(language: model.language))
                         .font(.system(size: 24, weight: .medium, design: .rounded))
                         .foregroundStyle(Color.white.opacity(0.78))
                         .multilineTextAlignment(.center)
@@ -1715,6 +2225,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         model.onSettingsChanged = { [weak self] settings in
             self?.breakManager?.updateAudioSettings(settings)
             self?.updateStatusItem()
+            self?.updateWindowTitles()
         }
 
         configureStatusItem()
@@ -1730,8 +2241,9 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
 
     private func configureStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        let image = NSImage(systemSymbolName: "pawprint.fill", accessibilityDescription: "PurrBreak")
-        image?.isTemplate = true
+        let image = AppIconStore.resizedImage(size: NSSize(width: 18, height: 18))
+            ?? NSImage(systemSymbolName: "pawprint.fill", accessibilityDescription: "PurrBreak")
+        image?.isTemplate = false
         item.button?.image = image
         item.button?.title = " Purr"
         item.button?.imagePosition = .imageLeft
@@ -1744,7 +2256,13 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
 
     private func updateStatusItem() {
         statusItem?.button?.title = " Purr \(model.statusCountdownText)"
-        statusItem?.button?.toolTip = "PurrBreak: \(model.statusCountdownLabel.lowercased()) \(model.statusCountdownText). Просмотрено \(model.watchedTimeText) / \(model.limitText)"
+        statusItem?.button?.toolTip = model.tr(
+            "menu.tooltip",
+            model.statusCountdownLabel.lowercased(),
+            model.statusCountdownText,
+            model.watchedTimeText,
+            model.limitText
+        )
     }
 
     @objc private func statusItemClicked() {
@@ -1753,19 +2271,19 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         countdownItem.isEnabled = false
         menu.addItem(countdownItem)
         menu.addItem(.separator())
-        menu.addItem(menuItem(title: "Открыть настройки", action: #selector(openSettingsFromMenu)))
-        menu.addItem(menuItem(title: "Проверка браузеров", action: #selector(openBrowserSettingsFromMenu)))
-        menu.addItem(menuItem(title: "Справка", action: #selector(openHelpFromMenu)))
+        menu.addItem(menuItem(title: model.tr("menu.openSettings"), action: #selector(openSettingsFromMenu)))
+        menu.addItem(menuItem(title: model.tr("settings.browserCheck"), action: #selector(openBrowserSettingsFromMenu)))
+        menu.addItem(menuItem(title: model.tr("settings.help"), action: #selector(openHelpFromMenu)))
         if model.isPreviewingBreak {
-            menu.addItem(menuItem(title: "Остановить тест", action: #selector(stopPreviewFromMenu)))
+            menu.addItem(menuItem(title: model.tr("settings.testStop"), action: #selector(stopPreviewFromMenu)))
         } else {
-            menu.addItem(menuItem(title: "Тест заставки", action: #selector(previewBreakFromMenu)))
+            menu.addItem(menuItem(title: model.tr("settings.test"), action: #selector(previewBreakFromMenu)))
         }
-        menu.addItem(menuItem(title: "Блокировка сейчас", action: #selector(startBreakFromMenu)))
-        menu.addItem(menuItem(title: "Сбросить счетчик", action: #selector(resetCounterFromMenu)))
+        menu.addItem(menuItem(title: model.tr("settings.startBreak"), action: #selector(startBreakFromMenu)))
+        menu.addItem(menuItem(title: model.tr("settings.resetCounter"), action: #selector(resetCounterFromMenu)))
         menu.addItem(themeMenuItem())
         menu.addItem(.separator())
-        menu.addItem(menuItem(title: "Выйти", action: #selector(quitFromMenu), keyEquivalent: "q"))
+        menu.addItem(menuItem(title: model.tr("settings.quit"), action: #selector(quitFromMenu), keyEquivalent: "q"))
         statusItem?.menu = menu
         statusItem?.button?.performClick(nil)
         statusItem?.menu = nil
@@ -1778,11 +2296,11 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     private func themeMenuItem() -> NSMenuItem {
-        let item = NSMenuItem(title: "Заставка", action: nil, keyEquivalent: "")
+        let item = NSMenuItem(title: model.tr("menu.screensaver"), action: nil, keyEquivalent: "")
         let submenu = NSMenu()
 
         for theme in BreakTheme.all {
-            let themeItem = NSMenuItem(title: theme.displayName, action: #selector(selectThemeFromMenu(_:)), keyEquivalent: "")
+            let themeItem = NSMenuItem(title: theme.displayName(language: model.language), action: #selector(selectThemeFromMenu(_:)), keyEquivalent: "")
             themeItem.target = self
             themeItem.representedObject = theme.id
             themeItem.state = model.settings.screensaverThemeID == theme.id ? .on : .off
@@ -1858,6 +2376,12 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         [settingsWindow, browserSettingsWindow, helpWindow].compactMap { $0 }
     }
 
+    private func updateWindowTitles() {
+        settingsWindow?.title = "PurrBreak"
+        browserSettingsWindow?.title = model.tr("browserCheck.title")
+        helpWindow?.title = model.tr("window.help")
+    }
+
     private func presentAppWindow(_ window: NSWindow) {
         NSApp.setActivationPolicy(.regular)
         window.makeKeyAndOrderFront(nil)
@@ -1889,7 +2413,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             )
 
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 560, height: 500),
+                contentRect: NSRect(x: 0, y: 0, width: 560, height: 590),
                 styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false
@@ -1929,7 +2453,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             browserSettingsWindow = window
         }
 
-        browserSettingsWindow?.title = isFirstRun ? "Доступ к браузеру" : "Проверка браузеров"
+        browserSettingsWindow?.title = isFirstRun ? model.tr("browserCheck.firstTitle") : model.tr("browserCheck.title")
         browserSettingsWindow?.contentView = NSHostingView(rootView: view)
         if let browserSettingsWindow {
             presentAppWindow(browserSettingsWindow)
@@ -1944,8 +2468,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 backing: .buffered,
                 defer: false
             )
-            window.title = "Справка PurrBreak"
-            window.contentView = NSHostingView(rootView: HelpView())
+            window.title = model.tr("window.help")
+            window.contentView = NSHostingView(rootView: HelpView(model: model))
             window.delegate = self
             window.center()
             window.isReleasedWhenClosed = false
