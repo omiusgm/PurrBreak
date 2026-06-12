@@ -95,6 +95,24 @@ open .build/PurrBreak.app
 
 Архив появится в `dist/PurrBreak-0.1.0-macOS.zip`.
 
+## Публикация на GitHub
+
+1. Создай пустой публичный репозиторий `PurrBreak` на GitHub.
+2. Скопируй SSH или HTTPS URL репозитория.
+3. Запусти:
+
+```zsh
+./scripts/publish-github.sh git@github.com:USERNAME/PurrBreak.git
+```
+
+или:
+
+```zsh
+./scripts/publish-github.sh https://github.com/USERNAME/PurrBreak.git
+```
+
+Скрипт отправит `main` и тег `v0.1.0`. После push тега GitHub Actions соберет `PurrBreak-0.1.0-macOS.zip` и создаст GitHub Release.
+
 ## Разработка
 
 ```zsh
