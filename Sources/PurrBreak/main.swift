@@ -635,6 +635,7 @@ private struct SettingsView: View {
     let previewBreak: () -> Void
     let stopPreview: () -> Void
     let resetCounter: () -> Void
+    let showHelp: () -> Void
     let quit: () -> Void
 
     var body: some View {
@@ -742,6 +743,12 @@ private struct SettingsView: View {
                 Spacer()
 
                 Button {
+                    showHelp()
+                } label: {
+                    Label("Справка", systemImage: "questionmark.circle")
+                }
+
+                Button {
                     quit()
                 } label: {
                     Label("Выйти", systemImage: "xmark.circle")
@@ -771,6 +778,82 @@ private struct SettingsView: View {
                 model.settings = settings
             }
         )
+    }
+}
+
+private struct HelpView: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(spacing: 12) {
+                    Image(systemName: "pawprint.fill")
+                        .font(.system(size: 30, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Как работает PurrBreak")
+                            .font(.system(size: 26, weight: .bold))
+                        Text("Коротко о счетчике, паузах и разрешениях")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                helpSection(
+                    title: "Что считает приложение",
+                    icon: "timer",
+                    text: "PurrBreak каждую секунду смотрит, какой браузер сейчас активен, и читает URL активной вкладки. Счетчик идет только если активная вкладка открыта на youtube.com или youtu.be."
+                )
+
+                helpSection(
+                    title: "Когда появляется заставка",
+                    icon: "moon.zzz.fill",
+                    text: "Когда накоплен лимит просмотра, приложение показывает полноэкранную паузу с выбранной заставкой. По умолчанию лимит 20 минут, пауза 5 минут. После завершения паузы счетчик сбрасывается."
+                )
+
+                helpSection(
+                    title: "Зачем нужен Automation",
+                    icon: "lock.shield",
+                    text: "macOS требует разрешение Automation, чтобы приложение могло спросить браузер об адресе активной вкладки. PurrBreak не читает историю, пароли, содержимое страниц или личные данные."
+                )
+
+                helpSection(
+                    title: "Какие браузеры поддерживаются",
+                    icon: "globe",
+                    text: "Safari, Chrome, Yandex Browser, Brave, Edge, Arc, Chromium, Vivaldi и Opera. Если счетчик не идет, проверь, что YouTube открыт именно в активном окне браузера и что Automation-разрешение включено."
+                )
+
+                helpSection(
+                    title: "Тест заставки",
+                    icon: "play.display",
+                    text: "Тест показывает оверлей примерно на 20 секунд, но клики проходят сквозь него. Закрыть тест можно кнопкой Остановить тест, из меню-бара или клавишей Esc, если macOS передала ее приложению."
+                )
+
+                helpSection(
+                    title: "Что приложение не делает",
+                    icon: "hand.raised",
+                    text: "PurrBreak не блокирует сайты на уровне сети, не следит за всеми приложениями и не отправляет данные наружу. Это мягкий локальный таймер для YouTube-пауз."
+                )
+            }
+            .padding(24)
+        }
+        .frame(width: 620, height: 620)
+    }
+
+    private func helpSection(title: String, icon: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title)
+                    .font(.headline)
+                Text(text)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 }
 
@@ -1256,6 +1339,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
     private var breakManager: BreakManager?
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
+    private var helpWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -1317,6 +1401,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(countdownItem)
         menu.addItem(.separator())
         menu.addItem(menuItem(title: "Открыть настройки", action: #selector(openSettingsFromMenu)))
+        menu.addItem(menuItem(title: "Справка", action: #selector(openHelpFromMenu)))
         if model.isPreviewingBreak {
             menu.addItem(menuItem(title: "Остановить тест", action: #selector(stopPreviewFromMenu)))
         } else {
@@ -1358,6 +1443,10 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         showSettings()
     }
 
+    @objc private func openHelpFromMenu() {
+        showHelp()
+    }
+
     @objc private func previewBreakFromMenu() {
         breakManager?.previewBreak()
     }
@@ -1397,6 +1486,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
                     self?.monitor?.resetCounter()
                     self?.updateStatusItem()
                 },
+                showHelp: { [weak self] in self?.showHelp() },
                 quit: { NSApp.terminate(nil) }
             )
 
@@ -1414,6 +1504,25 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         settingsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func showHelp() {
+        if helpWindow == nil {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 620, height: 620),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = "Справка PurrBreak"
+            window.contentView = NSHostingView(rootView: HelpView())
+            window.center()
+            window.isReleasedWhenClosed = false
+            helpWindow = window
+        }
+
+        helpWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 }
