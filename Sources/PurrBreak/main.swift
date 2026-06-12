@@ -138,10 +138,18 @@ private enum L10n {
         "help.supported.text": "Safari, Chrome, Yandex Browser, Brave, Edge, Arc, Chromium, Vivaldi и Opera. Firefox виден в списке, но текущий AppleScript-способ не умеет надежно читать его активную вкладку; для него лучше подойдет отдельное расширение.",
         "help.test.title": "Тест заставки",
         "help.test.text": "Тест показывает оверлей примерно на 20 секунд, но клики проходят сквозь него. Закрыть тест можно кнопкой Остановить тест, из меню-бара или клавишей Esc, если macOS передала ее приложению.",
+        "help.afterBreak.title": "После паузы",
+        "help.afterBreak.text": "Когда пауза закончилась, PurrBreak показывает маленькую развилку: вернуться к YouTube, взять еще 2 минуты тишины или закрыть окно и вернуться к делам. Приложение не закрывает вкладки насильно.",
         "help.notDoing.title": "Что приложение не делает",
         "help.notDoing.text": "PurrBreak не блокирует сайты на уровне сети, не следит за всеми приложениями и не отправляет данные наружу. Это мягкий локальный таймер для YouTube-пауз.",
         "help.backgroundMusic.title": "YouTube-музыка фоном",
         "help.backgroundMusic.text": "Если ты привык держать YouTube как фоновый музыкальный плеер во время работы, PurrBreak будет считать это просмотром YouTube. Текущая версия не умеет надежно отличать музыку от залипания; лучше заранее скачать плейлист или использовать отдельное музыкальное приложение.",
+        "postBreak.title": "Пауза закончилась",
+        "postBreak.subtitle": "Кот сделал свою часть. Что выбираем дальше?",
+        "postBreak.stats": "Сегодня уже спасено: %@",
+        "postBreak.work": "Вернуться к делам",
+        "postBreak.more": "Еще 2 минуты",
+        "postBreak.youtube": "Вернуться к YouTube",
         "overlay.breakTitle": "Пять минут перезагрузки",
         "overlay.previewTitle": "Тест заставки",
         "overlay.breakMessage": "Кот занял экран. YouTube подождет.",
@@ -149,7 +157,8 @@ private enum L10n {
         "menu.openSettings": "Открыть настройки",
         "menu.screensaver": "Заставка",
         "menu.tooltip": "PurrBreak: %@ %@. Просмотрено %@ / %@",
-        "window.help": "Справка PurrBreak"
+        "window.help": "Справка PurrBreak",
+        "window.postBreak": "Пауза закончилась"
     ]
 
     private static let en: [String: String] = [
@@ -230,10 +239,18 @@ private enum L10n {
         "help.supported.text": "Safari, Chrome, Yandex Browser, Brave, Edge, Arc, Chromium, Vivaldi, and Opera are supported. Firefox appears in the list, but the current AppleScript method cannot reliably read its active tab; an extension would be a better fit.",
         "help.test.title": "Break preview",
         "help.test.text": "The preview shows the overlay for about 20 seconds without intercepting clicks. You can close it with Stop Preview, from the menu bar, or with Esc if macOS passes the key to the app.",
+        "help.afterBreak.title": "After the break",
+        "help.afterBreak.text": "When the break ends, PurrBreak shows a small choice: return to YouTube, take two more quiet minutes, or close the window and go back to work. The app does not force-close tabs.",
         "help.notDoing.title": "What the app does not do",
         "help.notDoing.text": "PurrBreak does not block websites at the network level, monitor all apps, or send data anywhere. It is a gentle local timer for YouTube breaks.",
         "help.backgroundMusic.title": "YouTube music in the background",
         "help.backgroundMusic.text": "If you use YouTube as a background music player while working, PurrBreak will count that as YouTube time. The current version cannot reliably distinguish music from watching; it is better to download a playlist in advance or use a dedicated music app.",
+        "postBreak.title": "Break complete",
+        "postBreak.subtitle": "The cat did its part. What happens next?",
+        "postBreak.stats": "Saved today: %@",
+        "postBreak.work": "Back to work",
+        "postBreak.more": "2 more minutes",
+        "postBreak.youtube": "Return to YouTube",
         "overlay.breakTitle": "Five-Minute Reset",
         "overlay.previewTitle": "Break Preview",
         "overlay.breakMessage": "The cat has taken the screen. YouTube can wait.",
@@ -241,7 +258,8 @@ private enum L10n {
         "menu.openSettings": "Open Settings",
         "menu.screensaver": "Screensaver",
         "menu.tooltip": "PurrBreak: %@ %@. Watched %@ / %@",
-        "window.help": "PurrBreak Help"
+        "window.help": "PurrBreak Help",
+        "window.postBreak": "Break Complete"
     ]
 
     static func text(_ key: String, language: AppLanguage) -> String {
@@ -340,6 +358,7 @@ private final class PurrModel: ObservableObject {
     @Published var isWatchingShorts = false
     @Published var activeBrowserName: String
     @Published var currentURL = ""
+    @Published var lastYouTubeBundleID: String?
     @Published var monitorMessage: String
     @Published var isOnBreak = false
     @Published var isPreviewingBreak = false
@@ -894,6 +913,7 @@ private final class YouTubeMonitor {
         if let kind = Self.youtubeKind(for: snapshot.url) {
             model.isWatchingYouTube = true
             model.isWatchingShorts = kind == .shorts
+            model.lastYouTubeBundleID = snapshot.bundleID
             model.recordYouTubeWatch(kind: kind, elapsed: elapsed)
             model.monitorMessage = kind == .shorts ? model.tr("monitor.shortsActive") : model.tr("monitor.youtubeActive")
 
@@ -953,12 +973,12 @@ private final class BreakManager {
         self.onStatusChanged = onStatusChanged
     }
 
-    func beginBreak() {
+    func beginBreak(seconds overrideSeconds: Int? = nil) {
         guard !model.isOnBreak else { return }
 
         closePreview()
 
-        let seconds = max(60, model.settings.breakMinutes * 60)
+        let seconds = max(60, overrideSeconds ?? model.settings.breakMinutes * 60)
         model.isOnBreak = true
         model.breakRemainingSeconds = seconds
         model.recordBreakStarted(seconds: seconds)
@@ -1702,6 +1722,12 @@ private struct HelpView: View {
                 )
 
                 helpSection(
+                    title: model.tr("help.afterBreak.title"),
+                    icon: "arrow.right.circle",
+                    text: model.tr("help.afterBreak.text")
+                )
+
+                helpSection(
                     title: model.tr("help.backgroundMusic.title"),
                     icon: "music.note",
                     text: model.tr("help.backgroundMusic.text")
@@ -1733,6 +1759,72 @@ private struct HelpView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+}
+
+private struct PostBreakView: View {
+    @ObservedObject var model: PurrModel
+    let returnToYouTube: () -> Void
+    let takeMoreBreak: () -> Void
+    let backToWork: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            HStack(spacing: 14) {
+                AppIconMark(size: 54)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(model.tr("postBreak.title"))
+                        .font(.system(size: 28, weight: .bold))
+                    Text(model.tr("postBreak.subtitle"))
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            HStack(spacing: 10) {
+                Label(model.tr("postBreak.stats", PurrModel.durationText(seconds: model.dailySavedSeconds, language: model.language)), systemImage: "sparkles")
+                    .font(.system(.callout, weight: .medium))
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.primary.opacity(0.045))
+            )
+
+            VStack(spacing: 10) {
+                Button {
+                    backToWork()
+                } label: {
+                    Label(model.tr("postBreak.work"), systemImage: "checkmark.circle.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+
+                HStack(spacing: 10) {
+                    Button {
+                        takeMoreBreak()
+                    } label: {
+                        Label(model.tr("postBreak.more"), systemImage: "timer")
+                            .frame(maxWidth: .infinity)
+                    }
+
+                    Button {
+                        returnToYouTube()
+                    } label: {
+                        Label(model.tr("postBreak.youtube"), systemImage: "play.circle")
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+            .controlSize(.large)
+        }
+        .padding(24)
+        .frame(width: 520)
     }
 }
 
@@ -2220,6 +2312,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var settingsWindow: NSWindow?
     private var browserSettingsWindow: NSWindow?
     private var helpWindow: NSWindow?
+    private var postBreakWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -2229,6 +2322,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             onFinished: { [weak self] in
                 self?.monitor?.resetCounter()
                 self?.updateStatusItem()
+                self?.showPostBreakChoice()
             },
             onStatusChanged: { [weak self] in
                 self?.updateStatusItem()
@@ -2396,13 +2490,14 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     private var managedWindows: [NSWindow] {
-        [settingsWindow, browserSettingsWindow, helpWindow].compactMap { $0 }
+        [settingsWindow, browserSettingsWindow, helpWindow, postBreakWindow].compactMap { $0 }
     }
 
     private func updateWindowTitles() {
         settingsWindow?.title = "PurrBreak"
         browserSettingsWindow?.title = model.tr("browserCheck.title")
         helpWindow?.title = model.tr("window.help")
+        postBreakWindow?.title = model.tr("window.postBreak")
     }
 
     private func presentAppWindow(_ window: NSWindow) {
@@ -2502,6 +2597,57 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         if let helpWindow {
             presentAppWindow(helpWindow)
         }
+    }
+
+    private func showPostBreakChoice() {
+        let view = PostBreakView(
+            model: model,
+            returnToYouTube: { [weak self] in
+                self?.closePostBreakWindow()
+                self?.activateLastYouTubeBrowser()
+            },
+            takeMoreBreak: { [weak self] in
+                self?.closePostBreakWindow()
+                self?.breakManager?.beginBreak(seconds: 120)
+            },
+            backToWork: { [weak self] in
+                self?.closePostBreakWindow()
+            }
+        )
+
+        if postBreakWindow == nil {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 520, height: 320),
+                styleMask: [.titled, .closable, .miniaturizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = model.tr("window.postBreak")
+            window.delegate = self
+            window.center()
+            window.isReleasedWhenClosed = false
+            postBreakWindow = window
+        }
+
+        postBreakWindow?.title = model.tr("window.postBreak")
+        postBreakWindow?.contentView = NSHostingView(rootView: view)
+        postBreakWindow?.center()
+        if let postBreakWindow {
+            presentAppWindow(postBreakWindow)
+        }
+    }
+
+    private func closePostBreakWindow() {
+        postBreakWindow?.close()
+    }
+
+    private func activateLastYouTubeBrowser() {
+        guard let bundleID = model.lastYouTubeBundleID,
+              let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first else {
+            return
+        }
+
+        app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
     }
 
     private func openAutomationSettings() {
