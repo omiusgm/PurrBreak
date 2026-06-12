@@ -5,12 +5,30 @@
 <h1 align="center">PurrBreak</h1>
 
 <p align="center">
-  Мягкая open-source альтернатива жестким блокировщикам, сфокусированная на осознанных YouTube-паузах и снижении залипания в Shorts/Reels.
+  Мягкая open-source альтернатива жестким блокировщикам, сфокусированная на осознанных YouTube-паузах и снижении залипания в Shorts/Reels.<br>
+  A gentle open-source alternative to strict blockers, focused on mindful YouTube breaks and fewer Shorts/Reels traps.
 </p>
 
-Маленькое macOS-приложение, которое считает время активного просмотра YouTube и запускает обязательную паузу с большим анимированным котом и мурчанием. Дополнительно в репозитории есть PurrBreak Companion - браузерное расширение, которое убирает Shorts, рекомендации и экспериментально помогает с Instagram Reels.
+<p align="center">
+  <a href="https://omiusgm.github.io/PurrBreak/">Домашняя страница / Homepage</a> ·
+  <a href="#русский">Русский</a> ·
+  <a href="#english">English</a> ·
+  <a href="https://omiusgm.github.io/PurrBreak/companion/">PurrBreak Companion</a>
+</p>
 
-PurrBreak is a small macOS menu-bar app that gently interrupts long YouTube sessions with a cozy animated cat break. The optional Companion extension removes sticky YouTube and experimental Instagram/Reels hooks.
+## English
+
+PurrBreak is a gentle open-source macOS menu-bar app for mindful YouTube breaks. It tracks active YouTube time, gives Shorts a separate limit, and interrupts long sessions with a cozy animated cat break instead of a harsh block.
+
+The optional PurrBreak Companion browser extension hides sticky YouTube hooks like Shorts, recommendations, comments, end walls, and autoplay. Instagram/Reels cleanup is available as an experimental extra.
+
+- Project homepage: <https://omiusgm.github.io/PurrBreak/>
+- Companion extension: <https://omiusgm.github.io/PurrBreak/companion/>
+- Releases: <https://github.com/omiusgm/PurrBreak/releases>
+
+## Русский
+
+Маленькое macOS-приложение, которое считает время активного просмотра YouTube и запускает обязательную паузу с большим анимированным котом и мурчанием. Дополнительно в репозитории есть PurrBreak Companion - браузерное расширение, которое убирает Shorts, рекомендации и экспериментально помогает с Instagram Reels.
 
 В отличие от строгих блокировщиков, PurrBreak не пытается наказать или запереть пользователя. Его задача проще: заметить момент залипания, мягко перекрыть экран на несколько минут и дать шанс вернуться в нормальное состояние.
 
@@ -183,13 +201,18 @@ open .build/PurrBreak.app
 
 Скрипт отправит `main` и тег `v0.1.0`. После push тега GitHub Actions соберет `PurrBreak-0.1.0-macOS.zip` и создаст GitHub Release.
 
-Чтобы лендинг Companion открывался как обычная страница:
+Чтобы домашняя страница проекта и лендинг Companion открывались как обычные страницы:
 
 1. Открой настройки репозитория на GitHub.
 2. Перейди в `Pages`.
 3. В `Build and deployment` выбери `Deploy from a branch`.
 4. Выбери branch `main` и folder `/docs`.
-5. После публикации страница будет доступна по адресу `https://omiusgm.github.io/PurrBreak/companion/`.
+5. После публикации главная страница будет доступна по адресу `https://omiusgm.github.io/PurrBreak/`, а Companion - по адресу `https://omiusgm.github.io/PurrBreak/companion/`.
+
+Для поля `About` на GitHub можно поставить:
+
+- Website: `https://omiusgm.github.io/PurrBreak/`
+- Description: `Gentle macOS YouTube breaks with an animated cat + Companion extension for Shorts/Reels`
 
 ## Разработка
 

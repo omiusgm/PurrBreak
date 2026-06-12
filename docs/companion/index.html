@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PurrBreak Companion - убрать Shorts и рекомендации</title>
     <meta name="description" content="PurrBreak Companion прячет Shorts, рекомендации, комментарии и autoplay на YouTube, а также экспериментально помогает с Instagram Reels.">
+    <meta property="og:title" content="PurrBreak Companion - убрать Shorts и рекомендации">
+    <meta property="og:description" content="Браузерное расширение к PurrBreak: скрывает Shorts, рекомендации, комментарии, autoplay и экспериментально Instagram Reels.">
+    <meta property="og:image" content="https://omiusgm.github.io/PurrBreak/assets/purrbreak-icon.png">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://omiusgm.github.io/PurrBreak/companion/">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="PurrBreak Companion - hide Shorts and recommendations">
+    <meta name="twitter:description" content="Browser extension for PurrBreak: hide Shorts, recommendations, comments, autoplay, and experimental Instagram Reels hooks.">
+    <meta name="twitter:image" content="https://omiusgm.github.io/PurrBreak/assets/purrbreak-icon.png">
     <style>
       :root {
         color-scheme: light;
@@ -31,6 +40,11 @@
           radial-gradient(circle at 12% 0%, #ffe8c9 0, transparent 28rem),
           linear-gradient(180deg, var(--bg), #f8fbfb 70%);
         letter-spacing: 0;
+      }
+
+      body[data-lang="ru"] [data-lang="en"],
+      body[data-lang="en"] [data-lang="ru"] {
+        display: none !important;
       }
 
       a {
@@ -76,6 +90,38 @@
 
       .nav-links a {
         text-decoration: none;
+      }
+
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .lang-switch {
+        display: inline-flex;
+        padding: 3px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgb(255 255 255 / 0.72);
+      }
+
+      .lang-switch button {
+        min-width: 42px;
+        height: 30px;
+        border: 0;
+        border-radius: 6px;
+        color: var(--muted);
+        background: transparent;
+        font: inherit;
+        font-weight: 750;
+        cursor: pointer;
+      }
+
+      body[data-lang="ru"] .lang-switch button[data-set-lang="ru"],
+      body[data-lang="en"] .lang-switch button[data-set-lang="en"] {
+        color: var(--accent-ink);
+        background: var(--accent);
       }
 
       .hero {
@@ -301,6 +347,12 @@
           margin-bottom: 34px;
         }
 
+        .nav-right {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 12px;
+        }
+
         .hero,
         .split {
           grid-template-columns: 1fr;
@@ -316,37 +368,55 @@
       }
     </style>
   </head>
-  <body>
+  <body data-lang="ru">
     <div class="page">
       <nav class="nav">
-        <a class="brand" href="../../">
+        <a class="brand" href="../">
           <img src="../assets/purrbreak-icon.png" alt="">
           <span>PurrBreak Companion</span>
         </a>
-        <div class="nav-links">
-          <a href="#features">Что убирает</a>
-          <a href="#install">Установка</a>
-          <a href="https://github.com/omiusgm/PurrBreak/tree/main/extensions/purrbreak-companion">README</a>
+        <div class="nav-right">
+          <div class="nav-links">
+            <a href="../"><span data-lang="ru">PurrBreak</span><span data-lang="en">PurrBreak</span></a>
+            <a href="#features"><span data-lang="ru">Что убирает</span><span data-lang="en">Features</span></a>
+            <a href="#install"><span data-lang="ru">Установка</span><span data-lang="en">Install</span></a>
+            <a href="https://github.com/omiusgm/PurrBreak/tree/main/extensions/purrbreak-companion">README</a>
+          </div>
+          <div class="lang-switch" aria-label="Language">
+            <button type="button" data-set-lang="ru">RU</button>
+            <button type="button" data-set-lang="en">EN</button>
+          </div>
         </div>
       </nav>
 
       <main>
         <section class="hero">
           <div>
-            <span class="eyebrow">Расширение к PurrBreak</span>
-            <h1>Убрать Shorts, рекомендации и лишние крючки YouTube.</h1>
+            <span class="eyebrow">
+              <span data-lang="ru">Расширение к PurrBreak</span>
+              <span data-lang="en">PurrBreak browser extension</span>
+            </span>
+            <h1>
+              <span data-lang="ru">Убрать Shorts, рекомендации и лишние крючки YouTube.</span>
+              <span data-lang="en">Hide Shorts, recommendations, and sticky YouTube hooks.</span>
+            </h1>
             <p class="lead">
-              PurrBreak делает паузы, а Companion очищает сам интерфейс: прячет Shorts,
-              боковые рекомендации, комментарии, end wall и autoplay. Instagram Reels
-              поддерживается как экспериментальная доп. опция.
+              <span data-lang="ru">PurrBreak делает паузы, а Companion очищает сам интерфейс: прячет Shorts, боковые рекомендации, комментарии, end wall и autoplay. Instagram Reels поддерживается как экспериментальная доп. опция.</span>
+              <span data-lang="en">PurrBreak creates breaks, while Companion cleans up the page itself: it hides Shorts, side recommendations, comments, end walls, and autoplay. Instagram Reels support is experimental and optional.</span>
             </p>
             <div class="actions">
-              <a class="button primary" href="https://github.com/omiusgm/PurrBreak/raw/main/dist/PurrBreak-Companion-0.1.0.zip">Скачать расширение</a>
-              <a class="button" href="https://github.com/omiusgm/PurrBreak/tree/main/extensions/purrbreak-companion">Открыть README</a>
+              <a class="button primary" href="https://github.com/omiusgm/PurrBreak/raw/main/dist/PurrBreak-Companion-0.1.0.zip">
+                <span data-lang="ru">Скачать расширение</span>
+                <span data-lang="en">Download extension</span>
+              </a>
+              <a class="button" href="https://github.com/omiusgm/PurrBreak/tree/main/extensions/purrbreak-companion">
+                <span data-lang="ru">Открыть README</span>
+                <span data-lang="en">Open README</span>
+              </a>
             </div>
             <p class="note">
-              Сейчас это MVP для Chromium-браузеров: Chrome, Yandex Browser, Arc, Brave,
-              Edge, Opera, Vivaldi и Chromium. Safari/iPhone потребуют отдельную обертку позже.
+              <span data-lang="ru">Сейчас это MVP для Chromium-браузеров: Chrome, Yandex Browser, Arc, Brave, Edge, Opera, Vivaldi и Chromium. Safari/iPhone потребуют отдельную обертку позже.</span>
+              <span data-lang="en">This is currently an MVP for Chromium browsers: Chrome, Yandex Browser, Arc, Brave, Edge, Opera, Vivaldi, and Chromium. Safari/iPhone will need a separate wrapper later.</span>
             </p>
           </div>
 
@@ -370,66 +440,88 @@
         </section>
 
         <section id="features">
-          <h2>Что можно отключить</h2>
+          <h2><span data-lang="ru">Что можно отключить</span><span data-lang="en">What you can hide</span></h2>
           <div class="grid">
             <div class="card">
               <strong>YouTube Shorts</strong>
-              <p>Прячет Shorts из меню, ленты и блоков рекомендаций, чтобы короткие видео не утягивали внимание.</p>
+              <p><span data-lang="ru">Прячет Shorts из меню, ленты и блоков рекомендаций, чтобы короткие видео не утягивали внимание.</span><span data-lang="en">Hides Shorts from navigation, feeds, and recommendation blocks so short videos pull less attention.</span></p>
             </div>
             <div class="card">
-              <strong>Рекомендации</strong>
-              <p>Убирает боковую колонку, homepage, end wall и другие элементы, которые ведут к следующему ролику.</p>
+              <strong><span data-lang="ru">Рекомендации</span><span data-lang="en">Recommendations</span></strong>
+              <p><span data-lang="ru">Убирает боковую колонку, homepage, end wall и другие элементы, которые ведут к следующему ролику.</span><span data-lang="en">Removes the side column, homepage, end wall, and other surfaces that lead to the next video.</span></p>
             </div>
             <div class="card">
-              <strong>Комментарии и autoplay</strong>
-              <p>Можно скрыть комментарии и автоматически выключать autoplay на странице просмотра.</p>
+              <strong><span data-lang="ru">Комментарии и autoplay</span><span data-lang="en">Comments and autoplay</span></strong>
+              <p><span data-lang="ru">Можно скрыть комментарии и автоматически выключать autoplay на странице просмотра.</span><span data-lang="en">Hide comments and automatically turn off autoplay on watch pages.</span></p>
             </div>
             <div class="card">
               <strong>Focus mode</strong>
-              <p>Оставляет YouTube ближе к инструменту: поиск и открытое видео, меньше отвлекающих поверхностей.</p>
+              <p><span data-lang="ru">Оставляет YouTube ближе к инструменту: поиск и открытое видео, меньше отвлекающих поверхностей.</span><span data-lang="en">Makes YouTube feel more like a tool: search and the current video, fewer distracting surfaces.</span></p>
             </div>
             <div class="card">
               <strong>Instagram Reels</strong>
-              <p>Экспериментально прячет Reels, Explore и suggested accounts. Это дополнительный режим, не основной фокус.</p>
+              <p><span data-lang="ru">Экспериментально прячет Reels, Explore и suggested accounts. Это дополнительный режим, не основной фокус.</span><span data-lang="en">Experimentally hides Reels, Explore, and suggested accounts. This is an optional extra, not the main focus.</span></p>
             </div>
             <div class="card">
-              <strong>Локально и прозрачно</strong>
-              <p>Расширение не отправляет данные наружу. Настройки хранятся в браузере через chrome.storage.</p>
+              <strong><span data-lang="ru">Локально и прозрачно</span><span data-lang="en">Local and transparent</span></strong>
+              <p><span data-lang="ru">Расширение не отправляет данные наружу. Настройки хранятся в браузере через chrome.storage.</span><span data-lang="en">The extension does not send data anywhere. Settings are stored in the browser via chrome.storage.</span></p>
             </div>
           </div>
         </section>
 
         <section id="install" class="split">
           <div>
-            <h2>Как установить</h2>
+            <h2><span data-lang="ru">Как установить</span><span data-lang="en">How to install</span></h2>
             <p class="lead">
-              Пока расширение не опубликовано в магазинах, его можно поставить как unpacked extension.
+              <span data-lang="ru">Пока расширение не опубликовано в магазинах, его можно поставить как unpacked extension.</span>
+              <span data-lang="en">Until the extension is published in stores, install it as an unpacked extension.</span>
             </p>
           </div>
           <ol class="steps">
-            <li>Скачай архив <a href="https://github.com/omiusgm/PurrBreak/raw/main/dist/PurrBreak-Companion-0.1.0.zip">PurrBreak-Companion-0.1.0.zip</a> и распакуй его.</li>
-            <li>Открой в браузере <code>chrome://extensions</code> или аналогичную страницу расширений.</li>
-            <li>Включи <code>Developer mode</code>.</li>
-            <li>Нажми <code>Load unpacked</code>.</li>
-            <li>Выбери распакованную папку <code>purrbreak-companion</code>.</li>
+            <li><span data-lang="ru">Скачай архив <a href="https://github.com/omiusgm/PurrBreak/raw/main/dist/PurrBreak-Companion-0.1.0.zip">PurrBreak-Companion-0.1.0.zip</a> и распакуй его.</span><span data-lang="en">Download <a href="https://github.com/omiusgm/PurrBreak/raw/main/dist/PurrBreak-Companion-0.1.0.zip">PurrBreak-Companion-0.1.0.zip</a> and unzip it.</span></li>
+            <li><span data-lang="ru">Открой в браузере <code>chrome://extensions</code> или аналогичную страницу расширений.</span><span data-lang="en">Open <code>chrome://extensions</code> or your browser's extensions page.</span></li>
+            <li><span data-lang="ru">Включи <code>Developer mode</code>.</span><span data-lang="en">Enable <code>Developer mode</code>.</span></li>
+            <li><span data-lang="ru">Нажми <code>Load unpacked</code>.</span><span data-lang="en">Click <code>Load unpacked</code>.</span></li>
+            <li><span data-lang="ru">Выбери распакованную папку <code>purrbreak-companion</code>.</span><span data-lang="en">Select the unzipped <code>purrbreak-companion</code> folder.</span></li>
           </ol>
         </section>
 
         <section>
-          <h2>Почему это отдельное расширение</h2>
+          <h2><span data-lang="ru">Почему это отдельное расширение</span><span data-lang="en">Why this is a separate extension</span></h2>
           <div class="card">
             <p>
-              Нативное macOS-приложение хорошо считает активное время и запускает мягкую паузу.
-              Но убрать Shorts, комментарии и рекомендации внутри страницы может только браузерное расширение.
-              Поэтому PurrBreak и Companion работают как пара: паузы снаружи, меньше крючков внутри.
+              <span data-lang="ru">Нативное macOS-приложение хорошо считает активное время и запускает мягкую паузу. Но убрать Shorts, комментарии и рекомендации внутри страницы может только браузерное расширение. Поэтому PurrBreak и Companion работают как пара: паузы снаружи, меньше крючков внутри.</span>
+              <span data-lang="en">The native macOS app is good at tracking active time and starting a soft break. But only a browser extension can remove Shorts, comments, and recommendations inside the page. PurrBreak and Companion work as a pair: breaks outside, fewer hooks inside.</span>
             </p>
           </div>
         </section>
       </main>
 
       <footer class="footer">
-        PurrBreak Companion is open source. Код и README: <a href="https://github.com/omiusgm/PurrBreak/tree/main/extensions/purrbreak-companion">github.com/omiusgm/PurrBreak</a>.
+        <span data-lang="ru">PurrBreak Companion - open-source. Код и README: </span>
+        <span data-lang="en">PurrBreak Companion is open source. Code and README: </span>
+        <a href="https://github.com/omiusgm/PurrBreak/tree/main/extensions/purrbreak-companion">github.com/omiusgm/PurrBreak</a>.
       </footer>
     </div>
+    <script>
+      const root = document.body;
+      const buttons = document.querySelectorAll("[data-set-lang]");
+      const params = new URLSearchParams(window.location.search);
+      const preferredLanguage = (navigator.language || "").toLowerCase().startsWith("ru") ? "ru" : "en";
+      const initial = params.get("lang") || localStorage.getItem("purrbreak-lang") || preferredLanguage;
+
+      function setLanguage(lang) {
+        const normalized = lang === "en" ? "en" : "ru";
+        root.dataset.lang = normalized;
+        document.documentElement.lang = normalized;
+        localStorage.setItem("purrbreak-lang", normalized);
+      }
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => setLanguage(button.dataset.setLang));
+      });
+
+      setLanguage(initial);
+    </script>
   </body>
 </html>

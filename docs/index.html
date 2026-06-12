@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PurrBreak - мягкие YouTube-паузы</title>
+    <meta name="description" content="PurrBreak - маленькое macOS-приложение, которое мягко прерывает долгие YouTube-сессии уютной кото-паузой.">
+    <meta property="og:title" content="PurrBreak - мягкие YouTube-паузы">
+    <meta property="og:description" content="Open-source macOS-приложение: считает активный YouTube, отдельно ограничивает Shorts и запускает уютную паузу с анимированным котом.">
+    <meta property="og:image" content="https://omiusgm.github.io/PurrBreak/assets/purrbreak-icon.png">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://omiusgm.github.io/PurrBreak/">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="PurrBreak - мягкие YouTube-паузы">
+    <meta name="twitter:description" content="Gentle open-source macOS app for mindful YouTube breaks, Shorts limits, and cozy animated cat pauses.">
+    <meta name="twitter:image" content="https://omiusgm.github.io/PurrBreak/assets/purrbreak-icon.png">
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #fffaf5;
+        --ink: #261f1b;
+        --muted: #6f625b;
+        --line: #eadfd6;
+        --panel: #ffffff;
+        --soft: #fff0df;
+        --accent: #ff8a2a;
+        --accent-ink: #2b1608;
+        --green: #2da66d;
+        --shadow: 0 18px 50px rgb(70 44 24 / 0.14);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 12% 0%, #ffe8c9 0, transparent 28rem),
+          linear-gradient(180deg, var(--bg), #f8fbfb 72%);
+        letter-spacing: 0;
+      }
+
+      body[data-lang="ru"] [data-lang="en"],
+      body[data-lang="en"] [data-lang="ru"] {
+        display: none !important;
+      }
+
+      a { color: inherit; }
+
+      .page {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 28px 24px 60px;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 34px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        font-size: 20px;
+        text-decoration: none;
+      }
+
+      .brand img {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        box-shadow: 0 8px 22px rgb(25 20 16 / 0.16);
+      }
+
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 14px;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .nav-links a {
+        text-decoration: none;
+      }
+
+      .lang-switch {
+        display: inline-flex;
+        padding: 3px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgb(255 255 255 / 0.72);
+      }
+
+      .lang-switch button {
+        min-width: 42px;
+        height: 30px;
+        border: 0;
+        border-radius: 6px;
+        color: var(--muted);
+        background: transparent;
+        font: inherit;
+        font-weight: 750;
+        cursor: pointer;
+      }
+
+      body[data-lang="ru"] .lang-switch button[data-set-lang="ru"],
+      body[data-lang="en"] .lang-switch button[data-set-lang="en"] {
+        color: var(--accent-ink);
+        background: var(--accent);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.06fr) minmax(320px, 0.94fr);
+        gap: 44px;
+        align-items: center;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 11px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        background: rgb(255 255 255 / 0.68);
+        font-size: 14px;
+        font-weight: 650;
+      }
+
+      h1 {
+        max-width: 790px;
+        margin: 22px 0 16px;
+        font-size: clamp(42px, 5.4vw, 72px);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 670px;
+        margin: 0 0 28px;
+        color: var(--muted);
+        font-size: 21px;
+        line-height: 1.45;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 18px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 750;
+        background: var(--panel);
+      }
+
+      .button.primary {
+        border-color: transparent;
+        color: var(--accent-ink);
+        background: linear-gradient(180deg, #ffa64b, var(--accent));
+        box-shadow: 0 10px 28px rgb(255 138 42 / 0.28);
+      }
+
+      .note {
+        max-width: 620px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .app-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .traffic {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 13px 16px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .dot {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+      }
+
+      .red { background: #ff5f57; }
+      .yellow { background: #ffbd2e; }
+      .green { background: #28c840; }
+
+      .app-body {
+        padding: 22px;
+      }
+
+      .app-head {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 20px;
+      }
+
+      .app-head img {
+        width: 68px;
+        height: 68px;
+        border-radius: 14px;
+      }
+
+      .app-title {
+        font-size: 30px;
+        font-weight: 850;
+      }
+
+      .app-subtitle {
+        color: var(--muted);
+        margin-top: 4px;
+      }
+
+      .status-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        font-weight: 760;
+      }
+
+      .timer {
+        color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+
+      .bar {
+        height: 8px;
+        margin: 15px 0;
+        border-radius: 999px;
+        background: #ece6e1;
+        overflow: hidden;
+      }
+
+      .bar span {
+        display: block;
+        width: 62%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--accent);
+      }
+
+      .mini-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 18px;
+      }
+
+      .mini-stat {
+        padding: 12px;
+        border-radius: 8px;
+        background: var(--soft);
+      }
+
+      .mini-stat strong {
+        display: block;
+        font-size: 20px;
+      }
+
+      .mini-stat span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      section {
+        margin-top: 70px;
+      }
+
+      h2 {
+        margin: 0 0 18px;
+        font-size: 34px;
+        line-height: 1.1;
+        letter-spacing: 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .card {
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgb(255 255 255 / 0.78);
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 18px;
+      }
+
+      .card p,
+      .steps li {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .card p {
+        margin: 0;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        gap: 24px;
+        align-items: start;
+      }
+
+      .steps {
+        margin: 0;
+        padding-left: 22px;
+      }
+
+      .steps li {
+        margin: 0 0 12px;
+      }
+
+      code {
+        padding: 2px 5px;
+        border-radius: 6px;
+        background: var(--soft);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.94em;
+      }
+
+      .footer {
+        margin-top: 70px;
+        padding-top: 22px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 840px) {
+        .page { padding-inline: 18px; }
+        .nav { align-items: flex-start; flex-direction: column; }
+        .nav-right { align-items: flex-start; flex-direction: column; gap: 12px; }
+        .hero, .split { grid-template-columns: 1fr; }
+        .grid { grid-template-columns: 1fr; }
+        .mini-stats { grid-template-columns: 1fr; }
+        h1 { font-size: 44px; }
+      }
+    </style>
+  </head>
+  <body data-lang="ru">
+    <div class="page">
+      <nav class="nav">
+        <a class="brand" href="./">
+          <img src="assets/purrbreak-icon.png" alt="">
+          <span>PurrBreak</span>
+        </a>
+        <div class="nav-right">
+          <div class="nav-links">
+            <a href="#features"><span data-lang="ru">Возможности</span><span data-lang="en">Features</span></a>
+            <a href="#install"><span data-lang="ru">Скачать</span><span data-lang="en">Download</span></a>
+            <a href="companion/"><span data-lang="ru">Companion</span><span data-lang="en">Companion</span></a>
+            <a href="https://github.com/omiusgm/PurrBreak">GitHub</a>
+          </div>
+          <div class="lang-switch" aria-label="Language">
+            <button type="button" data-set-lang="ru">RU</button>
+            <button type="button" data-set-lang="en">EN</button>
+          </div>
+        </div>
+      </nav>
+
+      <main>
+        <section class="hero">
+          <div>
+            <span class="eyebrow">
+              <span data-lang="ru">Мягкая open-source альтернатива жестким блокировщикам</span>
+              <span data-lang="en">A gentler open-source alternative to strict blockers</span>
+            </span>
+            <h1>
+              <span data-lang="ru">Кот, который мягко вытаскивает из долгого YouTube.</span>
+              <span data-lang="en">A cat that gently pulls you out of long YouTube sessions.</span>
+            </h1>
+            <p class="lead">
+              <span data-lang="ru">PurrBreak считает активное время YouTube на macOS и запускает обязательную уютную паузу с большим анимированным котом. Shorts считаются отдельно, а Companion-расширение помогает убрать рекомендации и Reels.</span>
+              <span data-lang="en">PurrBreak tracks active YouTube time on macOS and starts a cozy mandatory break with a large animated cat. Shorts have a separate limit, and the Companion extension helps remove recommendations and Reels.</span>
+            </p>
+            <div class="actions">
+              <a class="button primary" href="https://github.com/omiusgm/PurrBreak/releases">
+                <span data-lang="ru">Скачать приложение</span>
+                <span data-lang="en">Download app</span>
+              </a>
+              <a class="button" href="companion/">
+                <span data-lang="ru">Убрать Shorts и рекомендации</span>
+                <span data-lang="en">Hide Shorts and recommendations</span>
+              </a>
+            </div>
+            <p class="note">
+              <span data-lang="ru">Приложение работает локально, читает только URL активной вкладки через macOS Automation и не отправляет данные наружу.</span>
+              <span data-lang="en">The app runs locally, reads only the active tab URL through macOS Automation, and does not send data anywhere.</span>
+            </p>
+          </div>
+
+          <div class="app-card" aria-label="PurrBreak app preview">
+            <div class="traffic">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <div class="app-body">
+              <div class="app-head">
+                <img src="assets/purrbreak-icon.png" alt="">
+                <div>
+                  <div class="app-title">PurrBreak</div>
+                  <div class="app-subtitle">
+                    <span data-lang="ru">YouTube-паузы и меньше ловушек в Shorts/Reels</span>
+                    <span data-lang="en">YouTube breaks and fewer Shorts/Reels traps</span>
+                  </div>
+                </div>
+              </div>
+              <div class="status-row">
+                <span data-lang="ru">YouTube активен</span>
+                <span data-lang="en">YouTube is active</span>
+                <span class="timer">07:42 / 20:00</span>
+              </div>
+              <div class="bar"><span></span></div>
+              <div class="mini-stats">
+                <div class="mini-stat">
+                  <strong>5m</strong>
+                  <span data-lang="ru">пауза</span>
+                  <span data-lang="en">break</span>
+                </div>
+                <div class="mini-stat">
+                  <strong>5m</strong>
+                  <span data-lang="ru">Shorts</span>
+                  <span data-lang="en">Shorts</span>
+                </div>
+                <div class="mini-stat">
+                  <strong>3</strong>
+                  <span data-lang="ru">паузы сегодня</span>
+                  <span data-lang="en">breaks today</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="features">
+          <h2><span data-lang="ru">Что умеет PurrBreak</span><span data-lang="en">What PurrBreak does</span></h2>
+          <div class="grid">
+            <div class="card">
+              <strong><span data-lang="ru">Считает только активный YouTube</span><span data-lang="en">Counts only active YouTube</span></strong>
+              <p><span data-lang="ru">Таймер идет, когда поддерживаемый браузер на переднем плане и активная вкладка открыта на YouTube.</span><span data-lang="en">The timer runs when a supported browser is frontmost and the active tab is on YouTube.</span></p>
+            </div>
+            <div class="card">
+              <strong><span data-lang="ru">Отдельный лимит для Shorts</span><span data-lang="en">Separate Shorts limit</span></strong>
+              <p><span data-lang="ru">Shorts и обычный YouTube считаются отдельно, потому что это разные паттерны залипания.</span><span data-lang="en">Shorts and regular YouTube are counted separately because they create different habits.</span></p>
+            </div>
+            <div class="card">
+              <strong><span data-lang="ru">Большая кото-пауза</span><span data-lang="en">Large cat break</span></strong>
+              <p><span data-lang="ru">Когда лимит достигнут, экран перекрывает мягкая анимированная заставка с мурчанием.</span><span data-lang="en">When the limit is reached, a soft animated cat overlay covers the screen with purring.</span></p>
+            </div>
+            <div class="card">
+              <strong><span data-lang="ru">Выбор после паузы</span><span data-lang="en">Post-break choice</span></strong>
+              <p><span data-lang="ru">После паузы можно вернуться к делам, взять еще 2 минуты или осознанно вернуться к YouTube.</span><span data-lang="en">After the break, choose to go back to work, take two more minutes, or return to YouTube deliberately.</span></p>
+            </div>
+            <div class="card">
+              <strong><span data-lang="ru">Дневная статистика</span><span data-lang="en">Daily stats</span></strong>
+              <p><span data-lang="ru">Минимальная статистика показывает YouTube сегодня, количество пауз и спасенное время.</span><span data-lang="en">Small daily stats show YouTube time, break count, and time saved today.</span></p>
+            </div>
+            <div class="card">
+              <strong>PurrBreak Companion</strong>
+              <p><span data-lang="ru">Расширение убирает Shorts, рекомендации, комментарии, autoplay и экспериментально Instagram Reels.</span><span data-lang="en">The extension hides Shorts, recommendations, comments, autoplay, and experimental Instagram Reels hooks.</span></p>
+            </div>
+          </div>
+        </section>
+
+        <section id="install" class="split">
+          <div>
+            <h2><span data-lang="ru">Скачать и установить</span><span data-lang="en">Download and install</span></h2>
+            <p class="lead">
+              <span data-lang="ru">PurrBreak пока подписан ad-hoc, поэтому macOS может попросить открыть приложение через правый клик.</span>
+              <span data-lang="en">PurrBreak is currently ad-hoc signed, so macOS may ask you to right-click and choose Open.</span>
+            </p>
+          </div>
+          <ol class="steps">
+            <li><span data-lang="ru">Открой <a href="https://github.com/omiusgm/PurrBreak/releases">GitHub Releases</a>.</span><span data-lang="en">Open <a href="https://github.com/omiusgm/PurrBreak/releases">GitHub Releases</a>.</span></li>
+            <li><span data-lang="ru">Скачай <code>PurrBreak-*-macOS.zip</code>.</span><span data-lang="en">Download <code>PurrBreak-*-macOS.zip</code>.</span></li>
+            <li><span data-lang="ru">Распакуй архив и перетащи <code>PurrBreak.app</code> в <code>/Applications</code>.</span><span data-lang="en">Unzip it and drag <code>PurrBreak.app</code> into <code>/Applications</code>.</span></li>
+            <li><span data-lang="ru">При первом запуске нажми правой кнопкой по приложению и выбери <code>Open</code>.</span><span data-lang="en">On first launch, right-click the app and choose <code>Open</code>.</span></li>
+            <li><span data-lang="ru">Когда macOS спросит Automation для браузера, разреши доступ.</span><span data-lang="en">When macOS asks for browser Automation access, allow it.</span></li>
+          </ol>
+        </section>
+
+        <section>
+          <h2><span data-lang="ru">Не жесткий блокировщик</span><span data-lang="en">Not a strict blocker</span></h2>
+          <div class="card">
+            <p>
+              <span data-lang="ru">PurrBreak не пытается наказать, запереть или сломать доступ к сайтам. Его задача проще: заметить момент залипания, мягко перекрыть экран на несколько минут и дать шанс вернуться в нормальное состояние.</span>
+              <span data-lang="en">PurrBreak does not try to punish, trap, or break access to websites. Its job is simpler: notice the moment of drifting, cover the screen for a few minutes, and give you a chance to reset.</span>
+            </p>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span data-lang="ru">PurrBreak - open-source. Код, README и релизы: </span>
+        <span data-lang="en">PurrBreak is open source. Code, README, and releases: </span>
+        <a href="https://github.com/omiusgm/PurrBreak">github.com/omiusgm/PurrBreak</a>.
+      </footer>
+    </div>
+
+    <script>
+      const root = document.body;
+      const buttons = document.querySelectorAll("[data-set-lang]");
+      const params = new URLSearchParams(window.location.search);
+      const preferredLanguage = (navigator.language || "").toLowerCase().startsWith("ru") ? "ru" : "en";
+      const initial = params.get("lang") || localStorage.getItem("purrbreak-lang") || preferredLanguage;
+
+      function setLanguage(lang) {
+        const normalized = lang === "en" ? "en" : "ru";
+        root.dataset.lang = normalized;
+        document.documentElement.lang = normalized;
+        localStorage.setItem("purrbreak-lang", normalized);
+      }
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => setLanguage(button.dataset.setLang));
+      });
+
+      setLanguage(initial);
+    </script>
+  </body>
+</html>
