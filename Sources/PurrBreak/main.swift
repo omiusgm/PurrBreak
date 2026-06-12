@@ -82,11 +82,13 @@ private final class PurrModel: ObservableObject {
     @Published var isOnBreak = false
     @Published var isPreviewingBreak = false
     @Published var breakRemainingSeconds = 0
+    @Published var browserStatuses: [BrowserStatus]
 
     var onSettingsChanged: ((PurrSettings) -> Void)?
 
     init(settings: PurrSettings) {
         self.settings = settings
+        self.browserStatuses = BrowserStatus.initialStatuses()
     }
 
     var watchLimitSeconds: Int {
@@ -142,6 +144,37 @@ private final class PurrModel: ObservableObject {
         let clamped = max(0, seconds)
         return String(format: "%02d:%02d", clamped / 60, clamped % 60)
     }
+
+    func markBrowserConnected(bundleID: String, displayName: String) {
+        updateBrowserStatus(bundleID: bundleID) { status in
+            status.state = .connected
+            status.detail = "URL активной вкладки читается."
+        }
+    }
+
+    func markBrowserNeedsPermission(bundleID: String, displayName: String, message: String) {
+        updateBrowserStatus(bundleID: bundleID) { status in
+            status.state = .needsPermission
+            status.detail = message
+        }
+    }
+
+    func markBrowserUnsupported(bundleID: String, displayName: String) {
+        updateBrowserStatus(bundleID: bundleID) { status in
+            status.state = .unsupported
+            status.detail = "\(displayName) пока лучше подключать через расширение или отдельный fallback."
+        }
+    }
+
+    private func updateBrowserStatus(bundleID: String, mutate: (inout BrowserStatus) -> Void) {
+        guard let index = browserStatuses.firstIndex(where: { $0.bundleID == bundleID }) else {
+            return
+        }
+
+        var status = browserStatuses[index]
+        mutate(&status)
+        browserStatuses[index] = status
+    }
 }
 
 private struct BrowserDescriptor {
@@ -152,6 +185,122 @@ private struct BrowserDescriptor {
     enum ScriptKind {
         case safari
         case chromium
+        case unsupported
+    }
+
+    var canReadURL: Bool {
+        scriptKind != .unsupported
+    }
+
+    static let all: [BrowserDescriptor] = [
+        BrowserDescriptor(bundleID: "com.apple.Safari", displayName: "Safari", scriptKind: .safari),
+        BrowserDescriptor(bundleID: "com.apple.SafariTechnologyPreview", displayName: "Safari Technology Preview", scriptKind: .safari),
+        BrowserDescriptor(bundleID: "com.google.Chrome", displayName: "Google Chrome", scriptKind: .chromium),
+        BrowserDescriptor(bundleID: "com.google.Chrome.canary", displayName: "Chrome Canary", scriptKind: .chromium),
+        BrowserDescriptor(bundleID: "ru.yandex.desktop.yandex-browser", displayName: "Yandex Browser", scriptKind: .chromium),
+        BrowserDescriptor(bundleID: "com.brave.Browser", displayName: "Brave", scriptKind: .chromium),
+        BrowserDescriptor(bundleID: "com.microsoft.edgemac", displayName: "Microsoft Edge", scriptKind: .chromium),
+        BrowserDescriptor(bundleID: "company.thebrowser.Browser", displayName: "Arc", scriptKind: .chromium),
+        BrowserDescriptor(bundleID: "org.chromium.Chromium", displayName: "Chromium", scriptKind: .chromium),
+        BrowserDescriptor(bundleID: "com.vivaldi.Vivaldi", displayName: "Vivaldi", scriptKind: .chromium),
+        BrowserDescriptor(bundleID: "com.operasoftware.Opera", displayName: "Opera", scriptKind: .chromium),
+        BrowserDescriptor(bundleID: "org.mozilla.firefox", displayName: "Firefox", scriptKind: .unsupported)
+    ]
+
+    static var byBundleID: [String: BrowserDescriptor] {
+        Dictionary(uniqueKeysWithValues: all.map { ($0.bundleID, $0) })
+    }
+}
+
+private enum BrowserConnectionState: Equatable {
+    case notInstalled
+    case waiting
+    case connected
+    case needsPermission
+    case unsupported
+}
+
+private struct BrowserStatus: Identifiable, Equatable {
+    let id: String
+    let displayName: String
+    let bundleID: String
+    let isInstalled: Bool
+    let canReadURL: Bool
+    var state: BrowserConnectionState
+    var detail: String
+
+    var stateText: String {
+        switch state {
+        case .notInstalled:
+            return "Не найден"
+        case .waiting:
+            return "Ожидает проверки"
+        case .connected:
+            return "Подключен"
+        case .needsPermission:
+            return "Нужен доступ"
+        case .unsupported:
+            return "Пока не поддерживается"
+        }
+    }
+
+    var symbolName: String {
+        switch state {
+        case .notInstalled:
+            return "minus.circle"
+        case .waiting:
+            return "clock"
+        case .connected:
+            return "checkmark.circle.fill"
+        case .needsPermission:
+            return "exclamationmark.triangle.fill"
+        case .unsupported:
+            return "hammer.circle"
+        }
+    }
+
+    var symbolColor: Color {
+        switch state {
+        case .notInstalled:
+            return .secondary
+        case .waiting:
+            return .orange
+        case .connected:
+            return .green
+        case .needsPermission:
+            return .red
+        case .unsupported:
+            return .secondary
+        }
+    }
+
+    static func initialStatuses() -> [BrowserStatus] {
+        BrowserDescriptor.all.map { descriptor in
+            let isInstalled = NSWorkspace.shared.urlForApplication(withBundleIdentifier: descriptor.bundleID) != nil
+            let state: BrowserConnectionState
+            let detail: String
+
+            if !isInstalled {
+                state = .notInstalled
+                detail = "Приложение не найдено на этом Mac."
+            } else if !descriptor.canReadURL {
+                state = .unsupported
+                detail = "Нужен отдельный способ отслеживания, например расширение."
+            } else {
+                state = .waiting
+                detail = "Открой YouTube в этом браузере, чтобы macOS запросила доступ."
+            }
+
+            return BrowserStatus(
+                id: descriptor.bundleID,
+                displayName: descriptor.displayName,
+                bundleID: descriptor.bundleID,
+                isInstalled: isInstalled,
+                canReadURL: descriptor.canReadURL,
+                state: state,
+                detail: detail
+            )
+        }
     }
 }
 
@@ -162,45 +311,56 @@ private struct BrowserSnapshot {
 }
 
 private enum BrowserReadError: Error, CustomStringConvertible {
-    case message(String)
+    case browserError(bundleID: String, browserName: String, message: String)
+    case unsupported(bundleID: String, browserName: String)
+
+    var bundleID: String {
+        switch self {
+        case .browserError(let bundleID, _, _), .unsupported(let bundleID, _):
+            return bundleID
+        }
+    }
+
+    var browserName: String {
+        switch self {
+        case .browserError(_, let browserName, _), .unsupported(_, let browserName):
+            return browserName
+        }
+    }
 
     var description: String {
         switch self {
-        case .message(let message):
+        case .browserError(_, _, let message):
             return message
+        case .unsupported(_, let browserName):
+            return "\(browserName): пока не умею читать URL активной вкладки"
         }
     }
 }
 
 private final class BrowserURLReader {
-    private let supportedBrowsers: [String: BrowserDescriptor] = [
-        "com.apple.Safari": BrowserDescriptor(bundleID: "com.apple.Safari", displayName: "Safari", scriptKind: .safari),
-        "com.apple.SafariTechnologyPreview": BrowserDescriptor(bundleID: "com.apple.SafariTechnologyPreview", displayName: "Safari Technology Preview", scriptKind: .safari),
-        "com.google.Chrome": BrowserDescriptor(bundleID: "com.google.Chrome", displayName: "Google Chrome", scriptKind: .chromium),
-        "com.google.Chrome.canary": BrowserDescriptor(bundleID: "com.google.Chrome.canary", displayName: "Chrome Canary", scriptKind: .chromium),
-        "com.brave.Browser": BrowserDescriptor(bundleID: "com.brave.Browser", displayName: "Brave", scriptKind: .chromium),
-        "com.microsoft.edgemac": BrowserDescriptor(bundleID: "com.microsoft.edgemac", displayName: "Microsoft Edge", scriptKind: .chromium),
-        "company.thebrowser.Browser": BrowserDescriptor(bundleID: "company.thebrowser.Browser", displayName: "Arc", scriptKind: .chromium),
-        "org.chromium.Chromium": BrowserDescriptor(bundleID: "org.chromium.Chromium", displayName: "Chromium", scriptKind: .chromium),
-        "com.vivaldi.Vivaldi": BrowserDescriptor(bundleID: "com.vivaldi.Vivaldi", displayName: "Vivaldi", scriptKind: .chromium),
-        "com.operasoftware.Opera": BrowserDescriptor(bundleID: "com.operasoftware.Opera", displayName: "Opera", scriptKind: .chromium),
-        "ru.yandex.desktop.yandex-browser": BrowserDescriptor(bundleID: "ru.yandex.desktop.yandex-browser", displayName: "Yandex Browser", scriptKind: .chromium)
-    ]
-
     func frontmostSnapshot() -> Result<BrowserSnapshot?, BrowserReadError> {
         guard let app = NSWorkspace.shared.frontmostApplication,
               let bundleID = app.bundleIdentifier else {
             return .success(nil)
         }
 
-        guard let browser = supportedBrowsers[bundleID] else {
+        guard let browser = BrowserDescriptor.byBundleID[bundleID] else {
             return .success(nil)
+        }
+
+        guard browser.canReadURL else {
+            return .failure(.unsupported(bundleID: browser.bundleID, browserName: browser.displayName))
         }
 
         let script = appleScript(for: browser)
         var error: NSDictionary?
         guard let descriptor = NSAppleScript(source: script)?.executeAndReturnError(&error) else {
-            return .failure(.message(errorMessage(from: error, browserName: browser.displayName)))
+            return .failure(.browserError(
+                bundleID: browser.bundleID,
+                browserName: browser.displayName,
+                message: errorMessage(from: error, browserName: browser.displayName)
+            ))
         }
 
         let url = descriptor.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -223,6 +383,8 @@ private final class BrowserURLReader {
                 return URL of active tab of front window
             end tell
             """
+        case .unsupported:
+            return ""
         }
     }
 
@@ -275,10 +437,20 @@ private final class YouTubeMonitor {
         switch reader.frontmostSnapshot() {
         case .success(let snapshot):
             update(with: snapshot, elapsed: elapsed)
-        case .failure(let message):
+        case .failure(let error):
             model.isWatchingYouTube = false
             model.currentURL = ""
-            model.monitorMessage = "Нужен доступ Automation: \(message.description)"
+
+            switch error {
+            case .browserError(let bundleID, let browserName, let message):
+                model.activeBrowserName = browserName
+                model.markBrowserNeedsPermission(bundleID: bundleID, displayName: browserName, message: message)
+                model.monitorMessage = "Нужен доступ Automation: \(message)"
+            case .unsupported(let bundleID, let browserName):
+                model.activeBrowserName = browserName
+                model.markBrowserUnsupported(bundleID: bundleID, displayName: browserName)
+                model.monitorMessage = "\(browserName) пока не поддерживается"
+            }
         }
 
         onStatusChanged?()
@@ -295,6 +467,7 @@ private final class YouTubeMonitor {
 
         model.activeBrowserName = snapshot.browserName
         model.currentURL = snapshot.url
+        model.markBrowserConnected(bundleID: snapshot.bundleID, displayName: snapshot.browserName)
 
         if Self.isYouTubeURL(snapshot.url) {
             model.isWatchingYouTube = true
@@ -636,127 +809,138 @@ private struct SettingsView: View {
     let stopPreview: () -> Void
     let resetCounter: () -> Void
     let showHelp: () -> Void
+    let openAutomationSettings: () -> Void
     let quit: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .center, spacing: 14) {
-                Image(systemName: "pawprint.fill")
-                    .font(.system(size: 34, weight: .semibold))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(Color.accentColor)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .center, spacing: 14) {
+                    Image(systemName: "pawprint.fill")
+                        .font(.system(size: 34, weight: .semibold))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.accentColor)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("PurrBreak")
-                        .font(.system(size: 28, weight: .bold))
-                    Text("Мягкий тайм-аут для YouTube")
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text(model.isWatchingYouTube ? "YouTube идет" : "YouTube не активен")
-                        .font(.headline)
-                    Spacer()
-                    Text("\(model.statusCountdownLabel): \(model.statusCountdownText)")
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("PurrBreak")
+                            .font(.system(size: 28, weight: .bold))
+                        Text("Мягкий тайм-аут для YouTube")
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
-                ProgressView(value: model.progress)
-                    .progressViewStyle(.linear)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text(model.isWatchingYouTube ? "YouTube идет" : "YouTube не активен")
+                            .font(.headline)
+                        Spacer()
+                        Text("\(model.statusCountdownLabel): \(model.statusCountdownText)")
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
 
-                HStack {
-                    Text("Просмотрено")
+                    ProgressView(value: model.progress)
+                        .progressViewStyle(.linear)
+
+                    HStack {
+                        Text("Просмотрено")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("\(model.watchedTimeText) / \(model.limitText)")
+                            .font(.system(.footnote, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text(model.monitorMessage)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                Divider()
+
+                BrowserStatusPanel(
+                    statuses: model.browserStatuses,
+                    openAutomationSettings: openAutomationSettings
+                )
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 14) {
+                    Picker("Заставка", selection: binding(\.screensaverThemeID)) {
+                        ForEach(BreakTheme.all) { theme in
+                            Text(theme.displayName).tag(theme.id)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Stepper(value: binding(\.watchLimitMinutes), in: 1...240) {
+                        settingRow(title: "Лимит YouTube", value: "\(model.settings.watchLimitMinutes) мин")
+                    }
+
+                    Stepper(value: binding(\.breakMinutes), in: 1...60) {
+                        settingRow(title: "Длина паузы", value: "\(model.settings.breakMinutes) мин")
+                    }
+
+                    Toggle("Мурчание во время паузы", isOn: binding(\.soundEnabled))
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        settingRow(title: "Громкость мурчания", value: "\(Int(model.settings.purrVolume * 100))%")
+                        Slider(value: binding(\.purrVolume), in: 0...1)
+                            .disabled(!model.settings.soundEnabled)
+                    }
+                }
+
+                Divider()
+
+                HStack(spacing: 10) {
+                    Button {
+                        if model.isPreviewingBreak {
+                            stopPreview()
+                        } else {
+                            previewBreak()
+                        }
+                    } label: {
+                        Label(
+                            model.isPreviewingBreak ? "Остановить тест" : "Тест заставки",
+                            systemImage: model.isPreviewingBreak ? "stop.circle.fill" : "play.display"
+                        )
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.escape, modifiers: [])
+
+                    Button {
+                        startBreak()
+                    } label: {
+                        Label("Блокировка сейчас", systemImage: "moon.zzz.fill")
+                    }
+
+                    Button {
+                        resetCounter()
+                    } label: {
+                        Label("Сбросить счетчик", systemImage: "arrow.counterclockwise")
+                    }
+
                     Spacer()
-                    Text("\(model.watchedTimeText) / \(model.limitText)")
-                        .font(.system(.footnote, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                }
 
-                Text(model.monitorMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
+                    Button {
+                        showHelp()
+                    } label: {
+                        Label("Справка", systemImage: "questionmark.circle")
+                    }
 
-            Divider()
-
-            VStack(alignment: .leading, spacing: 14) {
-                Picker("Заставка", selection: binding(\.screensaverThemeID)) {
-                    ForEach(BreakTheme.all) { theme in
-                        Text(theme.displayName).tag(theme.id)
+                    Button {
+                        quit()
+                    } label: {
+                        Label("Выйти", systemImage: "xmark.circle")
                     }
                 }
-                .pickerStyle(.menu)
-
-                Stepper(value: binding(\.watchLimitMinutes), in: 1...240) {
-                    settingRow(title: "Лимит YouTube", value: "\(model.settings.watchLimitMinutes) мин")
-                }
-
-                Stepper(value: binding(\.breakMinutes), in: 1...60) {
-                    settingRow(title: "Длина паузы", value: "\(model.settings.breakMinutes) мин")
-                }
-
-                Toggle("Мурчание во время паузы", isOn: binding(\.soundEnabled))
-
-                VStack(alignment: .leading, spacing: 6) {
-                    settingRow(title: "Громкость мурчания", value: "\(Int(model.settings.purrVolume * 100))%")
-                    Slider(value: binding(\.purrVolume), in: 0...1)
-                        .disabled(!model.settings.soundEnabled)
-                }
             }
-
-            Divider()
-
-            HStack(spacing: 10) {
-                Button {
-                    if model.isPreviewingBreak {
-                        stopPreview()
-                    } else {
-                        previewBreak()
-                    }
-                } label: {
-                    Label(
-                        model.isPreviewingBreak ? "Остановить тест" : "Тест заставки",
-                        systemImage: model.isPreviewingBreak ? "stop.circle.fill" : "play.display"
-                    )
-                }
-                .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.escape, modifiers: [])
-
-                Button {
-                    startBreak()
-                } label: {
-                    Label("Блокировка сейчас", systemImage: "moon.zzz.fill")
-                }
-
-                Button {
-                    resetCounter()
-                } label: {
-                    Label("Сбросить счетчик", systemImage: "arrow.counterclockwise")
-                }
-
-                Spacer()
-
-                Button {
-                    showHelp()
-                } label: {
-                    Label("Справка", systemImage: "questionmark.circle")
-                }
-
-                Button {
-                    quit()
-                } label: {
-                    Label("Выйти", systemImage: "xmark.circle")
-                }
-            }
+            .padding(24)
+            .frame(width: 640)
         }
-        .padding(24)
-        .frame(width: 560)
+        .frame(width: 640, height: 680)
     }
 
     private func settingRow(title: String, value: String) -> some View {
@@ -777,6 +961,77 @@ private struct SettingsView: View {
                 settings[keyPath: keyPath] = newValue
                 model.settings = settings
             }
+        )
+    }
+}
+
+private struct BrowserStatusPanel: View {
+    let statuses: [BrowserStatus]
+    let openAutomationSettings: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Браузеры", systemImage: "globe")
+                    .font(.headline)
+
+                Spacer()
+
+                Button {
+                    openAutomationSettings()
+                } label: {
+                    Label("Automation", systemImage: "gearshape")
+                }
+            }
+
+            Text("Статус обновляется после попытки прочитать активную вкладку. Открой YouTube в браузере, чтобы проверить подключение.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(spacing: 8) {
+                ForEach(statuses) { status in
+                    BrowserStatusRow(status: status)
+                }
+            }
+        }
+    }
+}
+
+private struct BrowserStatusRow: View {
+    let status: BrowserStatus
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: status.symbolName)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(status.symbolColor)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(status.displayName)
+                        .font(.system(.subheadline, weight: .semibold))
+
+                    Spacer()
+
+                    Text(status.stateText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                Text(status.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.primary.opacity(0.045))
         )
     }
 }
@@ -817,9 +1072,15 @@ private struct HelpView: View {
                 )
 
                 helpSection(
+                    title: "Статусы браузеров",
+                    icon: "checklist",
+                    text: "В настройках есть список браузеров. Он показывает, найден ли браузер на этом Mac, получилось ли прочитать активную вкладку или нужно открыть системные настройки Automation."
+                )
+
+                helpSection(
                     title: "Какие браузеры поддерживаются",
                     icon: "globe",
-                    text: "Safari, Chrome, Yandex Browser, Brave, Edge, Arc, Chromium, Vivaldi и Opera. Если счетчик не идет, проверь, что YouTube открыт именно в активном окне браузера и что Automation-разрешение включено."
+                    text: "Safari, Chrome, Yandex Browser, Brave, Edge, Arc, Chromium, Vivaldi и Opera. Firefox виден в списке, но текущий AppleScript-способ не умеет надежно читать его активную вкладку; для него лучше подойдет отдельное расширение."
                 )
 
                 helpSection(
@@ -1402,6 +1663,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
         menu.addItem(menuItem(title: "Открыть настройки", action: #selector(openSettingsFromMenu)))
         menu.addItem(menuItem(title: "Справка", action: #selector(openHelpFromMenu)))
+        menu.addItem(menuItem(title: "Разрешения браузеров", action: #selector(openAutomationFromMenu)))
         if model.isPreviewingBreak {
             menu.addItem(menuItem(title: "Остановить тест", action: #selector(stopPreviewFromMenu)))
         } else {
@@ -1447,6 +1709,10 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         showHelp()
     }
 
+    @objc private func openAutomationFromMenu() {
+        openAutomationSettings()
+    }
+
     @objc private func previewBreakFromMenu() {
         breakManager?.previewBreak()
     }
@@ -1487,12 +1753,13 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
                     self?.updateStatusItem()
                 },
                 showHelp: { [weak self] in self?.showHelp() },
+                openAutomationSettings: { [weak self] in self?.openAutomationSettings() },
                 quit: { NSApp.terminate(nil) }
             )
 
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 560, height: 480),
-                styleMask: [.titled, .closable, .miniaturizable],
+                contentRect: NSRect(x: 0, y: 0, width: 640, height: 680),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false
             )
@@ -1524,6 +1791,14 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
 
         helpWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func openAutomationSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
+            NSWorkspace.shared.open(url)
+        } else {
+            NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/System Settings.app"))
+        }
     }
 }
 
