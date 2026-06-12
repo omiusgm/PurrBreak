@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "PurrBreak Companion",
+  "version": "0.1.0",
+  "description": "Hide Shorts, recommendations, comments, autoplay, and other rabbit holes on YouTube and Instagram.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "PurrBreak Companion",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://m.youtube.com/*",
+    "*://*.instagram.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://m.youtube.com/*",
+        "*://*.instagram.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}

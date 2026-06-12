@@ -140,6 +140,9 @@ private enum L10n {
         "help.test.text": "Тест показывает оверлей примерно на 20 секунд, но клики проходят сквозь него. Закрыть тест можно кнопкой Остановить тест, из меню-бара или клавишей Esc, если macOS передала ее приложению.",
         "help.afterBreak.title": "После паузы",
         "help.afterBreak.text": "Когда пауза закончилась, PurrBreak показывает маленькую развилку: вернуться к YouTube, взять еще 2 минуты тишины или закрыть окно и вернуться к делам. Приложение не закрывает вкладки насильно.",
+        "help.companion.title": "Дополнительно: убрать Shorts и рекомендации",
+        "help.companion.text": "PurrBreak делает паузы, а PurrBreak Companion убирает липкие элементы внутри YouTube: Shorts, рекомендации, комментарии и autoplay. В MVP также есть экспериментальные переключатели для Instagram Reels и Explore.",
+        "help.companion.button": "Открыть PurrBreak Companion",
         "help.notDoing.title": "Что приложение не делает",
         "help.notDoing.text": "PurrBreak не блокирует сайты на уровне сети, не следит за всеми приложениями и не отправляет данные наружу. Это мягкий локальный таймер для YouTube-пауз.",
         "help.backgroundMusic.title": "YouTube-музыка фоном",
@@ -241,6 +244,9 @@ private enum L10n {
         "help.test.text": "The preview shows the overlay for about 20 seconds without intercepting clicks. You can close it with Stop Preview, from the menu bar, or with Esc if macOS passes the key to the app.",
         "help.afterBreak.title": "After the break",
         "help.afterBreak.text": "When the break ends, PurrBreak shows a small choice: return to YouTube, take two more quiet minutes, or close the window and go back to work. The app does not force-close tabs.",
+        "help.companion.title": "Extra: hide Shorts and recommendations",
+        "help.companion.text": "PurrBreak creates breaks, while PurrBreak Companion removes sticky YouTube hooks: Shorts, recommendations, comments, and autoplay. The MVP also includes experimental toggles for Instagram Reels and Explore.",
+        "help.companion.button": "Open PurrBreak Companion",
         "help.notDoing.title": "What the app does not do",
         "help.notDoing.text": "PurrBreak does not block websites at the network level, monitor all apps, or send data anywhere. It is a gentle local timer for YouTube breaks.",
         "help.backgroundMusic.title": "YouTube music in the background",
@@ -1670,6 +1676,7 @@ private struct BrowserStatusRow: View {
 
 private struct HelpView: View {
     @ObservedObject var model: PurrModel
+    let openCompanion: () -> Void
 
     var body: some View {
         ScrollView {
@@ -1727,6 +1734,14 @@ private struct HelpView: View {
                     text: model.tr("help.afterBreak.text")
                 )
 
+                actionSection(
+                    title: model.tr("help.companion.title"),
+                    icon: "sparkles.rectangle.stack",
+                    text: model.tr("help.companion.text"),
+                    buttonTitle: model.tr("help.companion.button"),
+                    action: openCompanion
+                )
+
                 helpSection(
                     title: model.tr("help.backgroundMusic.title"),
                     icon: "music.note",
@@ -1757,6 +1772,28 @@ private struct HelpView: View {
                 Text(text)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func actionSection(title: String, icon: String, text: String, buttonTitle: String, action: @escaping () -> Void) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(.headline)
+                Text(text)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    action()
+                } label: {
+                    Label(buttonTitle, systemImage: "arrow.up.right.square")
+                }
             }
         }
     }
@@ -2587,7 +2624,10 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 defer: false
             )
             window.title = model.tr("window.help")
-            window.contentView = NSHostingView(rootView: HelpView(model: model))
+            window.contentView = NSHostingView(rootView: HelpView(
+                model: model,
+                openCompanion: { [weak self] in self?.openCompanionPage() }
+            ))
             window.delegate = self
             window.center()
             window.isReleasedWhenClosed = false
@@ -2648,6 +2688,12 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         }
 
         app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+    }
+
+    private func openCompanionPage() {
+        if let url = URL(string: "https://github.com/omiusgm/PurrBreak/tree/main/extensions/purrbreak-companion") {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     private func openAutomationSettings() {

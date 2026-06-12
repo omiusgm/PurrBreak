@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PurrBreak Companion</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <header class="header">
+      <img src="icons/icon-128.png" alt="" class="icon">
+      <div>
+        <h1>PurrBreak Companion</h1>
+        <p>Make feeds less sticky.</p>
+      </div>
+    </header>
+
+    <main>
+      <section class="section">
+        <h2>YouTube</h2>
+        <label class="toggle-row">
+          <span>Hide Shorts</span>
+          <input type="checkbox" data-setting="youtubeHideShorts">
+        </label>
+        <label class="toggle-row">
+          <span>Hide homepage</span>
+          <input type="checkbox" data-setting="youtubeHideHomepage">
+        </label>
+        <label class="toggle-row">
+          <span>Hide sidebar / recommendations</span>
+          <input type="checkbox" data-setting="youtubeHideSidebar">
+        </label>
+        <label class="toggle-row">
+          <span>Hide comments</span>
+          <input type="checkbox" data-setting="youtubeHideComments">
+        </label>
+        <label class="toggle-row">
+          <span>Hide end wall</span>
+          <input type="checkbox" data-setting="youtubeHideEndWall">
+        </label>
+        <label class="toggle-row">
+          <span>Disable autoplay</span>
+          <input type="checkbox" data-setting="youtubeDisableAutoplay">
+        </label>
+        <label class="toggle-row">
+          <span>Focus mode</span>
+          <input type="checkbox" data-setting="youtubeFocusMode">
+        </label>
+      </section>
+
+      <section class="section">
+        <h2>Instagram experimental</h2>
+        <label class="toggle-row">
+          <span>Hide Reels</span>
+          <input type="checkbox" data-setting="instagramHideReels">
+        </label>
+        <label class="toggle-row">
+          <span>Hide Explore</span>
+          <input type="checkbox" data-setting="instagramHideExplore">
+        </label>
+        <label class="toggle-row">
+          <span>Hide suggested accounts</span>
+          <input type="checkbox" data-setting="instagramHideSuggested">
+        </label>
+      </section>
+    </main>
+
+    <footer class="footer">Reload the page if a site does not update immediately.</footer>
+    <script src="popup.js"></script>
+  </body>
+</html>

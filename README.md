@@ -65,10 +65,40 @@ PurrBreak читает URL активной вкладки браузера че
 - Есть 4 заставки: `Рыжий сон`, `Лунная дрема`, `Дождливое окно`, `Космический сон`.
 - Интерфейс можно переключить между русским и английским языком.
 - В окне и меню-баре можно выбрать заставку, запустить тест без блокировки кликов, включить ручную блокировку и сбросить счетчик.
+- В репозитории есть MVP браузерного расширения PurrBreak Companion, которое убирает Shorts, рекомендации, комментарии, autoplay и экспериментально помогает с Instagram Reels.
 
 ## YouTube как музыка фоном
 
 Если YouTube используется как фоновый музыкальный плеер во время работы, PurrBreak будет считать это временем YouTube. Текущая версия не умеет надежно отличать музыку от просмотра видео. Для такого сценария лучше заранее скачать плейлист или использовать отдельное музыкальное приложение.
+
+## Дополнительно: убрать Shorts и рекомендации
+
+PurrBreak Companion - экспериментальное браузерное расширение для Chrome, Yandex Browser, Arc, Brave, Edge, Opera, Vivaldi и Chromium. Оно не заменяет паузы PurrBreak, а убирает липкие элементы внутри сайтов.
+
+YouTube MVP:
+
+- Hide Shorts.
+- Hide homepage.
+- Hide sidebar / recommendations.
+- Hide comments.
+- Hide end wall.
+- Disable autoplay.
+- Focus mode.
+
+Instagram MVP, пока экспериментально:
+
+- Hide Reels.
+- Hide Explore.
+- Hide suggested accounts.
+
+Локальная установка:
+
+1. Открой `chrome://extensions`.
+2. Включи developer mode.
+3. Нажми `Load unpacked`.
+4. Выбери папку [`extensions/purrbreak-companion`](extensions/purrbreak-companion).
+
+Safari и iPhone потребуют отдельную Safari Web Extension-обертку позже.
 
 ## Сундук идей
 
