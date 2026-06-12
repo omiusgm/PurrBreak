@@ -8,6 +8,7 @@ private enum DefaultsKey {
     static let soundEnabled = "soundEnabled"
     static let purrVolume = "purrVolume"
     static let screensaverThemeID = "screensaverThemeID"
+    static let didShowBrowserSetup = "didShowBrowserSetup"
 }
 
 private struct BreakTheme: Identifiable, Equatable {
@@ -809,138 +810,136 @@ private struct SettingsView: View {
     let stopPreview: () -> Void
     let resetCounter: () -> Void
     let showHelp: () -> Void
-    let openAutomationSettings: () -> Void
+    let showBrowserSettings: () -> Void
     let quit: () -> Void
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .center, spacing: 14) {
-                    Image(systemName: "pawprint.fill")
-                        .font(.system(size: 34, weight: .semibold))
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(Color.accentColor)
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .center, spacing: 14) {
+                Image(systemName: "pawprint.fill")
+                    .font(.system(size: 34, weight: .semibold))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.accentColor)
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("PurrBreak")
-                            .font(.system(size: 28, weight: .bold))
-                        Text("Мягкий тайм-аут для YouTube")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text(model.isWatchingYouTube ? "YouTube идет" : "YouTube не активен")
-                            .font(.headline)
-                        Spacer()
-                        Text("\(model.statusCountdownLabel): \(model.statusCountdownText)")
-                            .font(.system(.body, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                    }
-
-                    ProgressView(value: model.progress)
-                        .progressViewStyle(.linear)
-
-                    HStack {
-                        Text("Просмотрено")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text("\(model.watchedTimeText) / \(model.limitText)")
-                            .font(.system(.footnote, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Text(model.monitorMessage)
-                        .font(.footnote)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("PurrBreak")
+                        .font(.system(size: 28, weight: .bold))
+                    Text("Мягкий тайм-аут для YouTube")
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-
-                Divider()
-
-                BrowserStatusPanel(
-                    statuses: model.browserStatuses,
-                    openAutomationSettings: openAutomationSettings
-                )
-
-                Divider()
-
-                VStack(alignment: .leading, spacing: 14) {
-                    Picker("Заставка", selection: binding(\.screensaverThemeID)) {
-                        ForEach(BreakTheme.all) { theme in
-                            Text(theme.displayName).tag(theme.id)
-                        }
-                    }
-                    .pickerStyle(.menu)
-
-                    Stepper(value: binding(\.watchLimitMinutes), in: 1...240) {
-                        settingRow(title: "Лимит YouTube", value: "\(model.settings.watchLimitMinutes) мин")
-                    }
-
-                    Stepper(value: binding(\.breakMinutes), in: 1...60) {
-                        settingRow(title: "Длина паузы", value: "\(model.settings.breakMinutes) мин")
-                    }
-
-                    Toggle("Мурчание во время паузы", isOn: binding(\.soundEnabled))
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        settingRow(title: "Громкость мурчания", value: "\(Int(model.settings.purrVolume * 100))%")
-                        Slider(value: binding(\.purrVolume), in: 0...1)
-                            .disabled(!model.settings.soundEnabled)
-                    }
-                }
-
-                Divider()
-
-                HStack(spacing: 10) {
-                    Button {
-                        if model.isPreviewingBreak {
-                            stopPreview()
-                        } else {
-                            previewBreak()
-                        }
-                    } label: {
-                        Label(
-                            model.isPreviewingBreak ? "Остановить тест" : "Тест заставки",
-                            systemImage: model.isPreviewingBreak ? "stop.circle.fill" : "play.display"
-                        )
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.escape, modifiers: [])
-
-                    Button {
-                        startBreak()
-                    } label: {
-                        Label("Блокировка сейчас", systemImage: "moon.zzz.fill")
-                    }
-
-                    Button {
-                        resetCounter()
-                    } label: {
-                        Label("Сбросить счетчик", systemImage: "arrow.counterclockwise")
-                    }
-
-                    Spacer()
-
-                    Button {
-                        showHelp()
-                    } label: {
-                        Label("Справка", systemImage: "questionmark.circle")
-                    }
-
-                    Button {
-                        quit()
-                    } label: {
-                        Label("Выйти", systemImage: "xmark.circle")
-                    }
                 }
             }
-            .padding(24)
-            .frame(width: 640)
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(model.isWatchingYouTube ? "YouTube идет" : "YouTube не активен")
+                        .font(.headline)
+                    Spacer()
+                    Text("\(model.statusCountdownLabel): \(model.statusCountdownText)")
+                        .font(.system(.body, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+
+                ProgressView(value: model.progress)
+                    .progressViewStyle(.linear)
+
+                HStack {
+                    Text("Просмотрено")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(model.watchedTimeText) / \(model.limitText)")
+                        .font(.system(.footnote, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+
+                Text(model.monitorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 14) {
+                Picker("Заставка", selection: binding(\.screensaverThemeID)) {
+                    ForEach(BreakTheme.all) { theme in
+                        Text(theme.displayName).tag(theme.id)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Stepper(value: binding(\.watchLimitMinutes), in: 1...240) {
+                    settingRow(title: "Лимит YouTube", value: "\(model.settings.watchLimitMinutes) мин")
+                }
+
+                Stepper(value: binding(\.breakMinutes), in: 1...60) {
+                    settingRow(title: "Длина паузы", value: "\(model.settings.breakMinutes) мин")
+                }
+
+                Toggle("Мурчание во время паузы", isOn: binding(\.soundEnabled))
+
+                VStack(alignment: .leading, spacing: 6) {
+                    settingRow(title: "Громкость мурчания", value: "\(Int(model.settings.purrVolume * 100))%")
+                    Slider(value: binding(\.purrVolume), in: 0...1)
+                        .disabled(!model.settings.soundEnabled)
+                }
+            }
+
+            Divider()
+
+            HStack(spacing: 10) {
+                Button {
+                    if model.isPreviewingBreak {
+                        stopPreview()
+                    } else {
+                        previewBreak()
+                    }
+                } label: {
+                    Label(
+                        model.isPreviewingBreak ? "Остановить тест" : "Тест заставки",
+                        systemImage: model.isPreviewingBreak ? "stop.circle.fill" : "play.display"
+                    )
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.escape, modifiers: [])
+
+                Button {
+                    startBreak()
+                } label: {
+                    Label("Блокировка сейчас", systemImage: "moon.zzz.fill")
+                }
+
+                Button {
+                    resetCounter()
+                } label: {
+                    Label("Сбросить счетчик", systemImage: "arrow.counterclockwise")
+                }
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    showBrowserSettings()
+                } label: {
+                    Label("Настройка браузеров", systemImage: "globe")
+                }
+
+                Spacer()
+
+                Button {
+                    showHelp()
+                } label: {
+                    Label("Справка", systemImage: "questionmark.circle")
+                }
+
+                Button {
+                    quit()
+                } label: {
+                    Label("Выйти", systemImage: "xmark.circle")
+                }
+            }
         }
-        .frame(width: 640, height: 680)
+        .padding(24)
+        .frame(width: 560)
     }
 
     private func settingRow(title: String, value: String) -> some View {
@@ -962,6 +961,86 @@ private struct SettingsView: View {
                 model.settings = settings
             }
         )
+    }
+}
+
+private struct BrowserSettingsView: View {
+    @ObservedObject var model: PurrModel
+    let isFirstRun: Bool
+    let openAutomationSettings: () -> Void
+    let openMainSettings: () -> Void
+    let close: () -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(alignment: .center, spacing: 14) {
+                    Image(systemName: "globe.badge.chevron.backward")
+                        .font(.system(size: 32, weight: .semibold))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.accentColor)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(isFirstRun ? "Подключим браузеры" : "Настройка браузеров")
+                            .font(.system(size: 26, weight: .bold))
+                        Text("PurrBreak считает YouTube только в подключенных браузерах")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if isFirstRun {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Первый запуск")
+                            .font(.headline)
+                        Text("Открой YouTube в браузере, которым пользуешься, и вернись сюда. macOS может попросить разрешение Automation - его нужно разрешить, чтобы PurrBreak видел URL активной вкладки.")
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.accentColor.opacity(0.08))
+                    )
+                }
+
+                BrowserStatusPanel(
+                    statuses: model.browserStatuses,
+                    openAutomationSettings: openAutomationSettings
+                )
+
+                Divider()
+
+                HStack(spacing: 10) {
+                    Button {
+                        openAutomationSettings()
+                    } label: {
+                        Label("Открыть Automation", systemImage: "gearshape")
+                    }
+
+                    Spacer()
+
+                    if isFirstRun {
+                        Button {
+                            close()
+                            openMainSettings()
+                        } label: {
+                            Label("Перейти к настройкам", systemImage: "arrow.right.circle.fill")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    } else {
+                        Button {
+                            close()
+                        } label: {
+                            Label("Готово", systemImage: "checkmark.circle")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+            }
+            .padding(24)
+            .frame(width: 620)
+        }
+        .frame(width: 620, height: 660)
     }
 }
 
@@ -1074,7 +1153,7 @@ private struct HelpView: View {
                 helpSection(
                     title: "Статусы браузеров",
                     icon: "checklist",
-                    text: "В настройках есть список браузеров. Он показывает, найден ли браузер на этом Mac, получилось ли прочитать активную вкладку или нужно открыть системные настройки Automation."
+                    text: "Отдельное окно Настройка браузеров показывает, найден ли браузер на этом Mac, получилось ли прочитать активную вкладку или нужно открыть системные настройки Automation."
                 )
 
                 helpSection(
@@ -1600,6 +1679,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
     private var breakManager: BreakManager?
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
+    private var browserSettingsWindow: NSWindow?
     private var helpWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -1633,7 +1713,13 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
 
         configureStatusItem()
         monitor?.start()
-        showSettings()
+
+        if UserDefaults.standard.bool(forKey: DefaultsKey.didShowBrowserSetup) {
+            showSettings()
+        } else {
+            showBrowserSettings(isFirstRun: true)
+            UserDefaults.standard.set(true, forKey: DefaultsKey.didShowBrowserSetup)
+        }
     }
 
     private func configureStatusItem() {
@@ -1662,8 +1748,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(countdownItem)
         menu.addItem(.separator())
         menu.addItem(menuItem(title: "Открыть настройки", action: #selector(openSettingsFromMenu)))
+        menu.addItem(menuItem(title: "Настройка браузеров", action: #selector(openBrowserSettingsFromMenu)))
         menu.addItem(menuItem(title: "Справка", action: #selector(openHelpFromMenu)))
-        menu.addItem(menuItem(title: "Разрешения браузеров", action: #selector(openAutomationFromMenu)))
         if model.isPreviewingBreak {
             menu.addItem(menuItem(title: "Остановить тест", action: #selector(stopPreviewFromMenu)))
         } else {
@@ -1705,12 +1791,12 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         showSettings()
     }
 
-    @objc private func openHelpFromMenu() {
-        showHelp()
+    @objc private func openBrowserSettingsFromMenu() {
+        showBrowserSettings()
     }
 
-    @objc private func openAutomationFromMenu() {
-        openAutomationSettings()
+    @objc private func openHelpFromMenu() {
+        showHelp()
     }
 
     @objc private func previewBreakFromMenu() {
@@ -1753,13 +1839,13 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
                     self?.updateStatusItem()
                 },
                 showHelp: { [weak self] in self?.showHelp() },
-                openAutomationSettings: { [weak self] in self?.openAutomationSettings() },
+                showBrowserSettings: { [weak self] in self?.showBrowserSettings() },
                 quit: { NSApp.terminate(nil) }
             )
 
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 640, height: 680),
-                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                contentRect: NSRect(x: 0, y: 0, width: 560, height: 500),
+                styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false
             )
@@ -1771,6 +1857,33 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         settingsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func showBrowserSettings(isFirstRun: Bool = false) {
+        let view = BrowserSettingsView(
+            model: model,
+            isFirstRun: isFirstRun,
+            openAutomationSettings: { [weak self] in self?.openAutomationSettings() },
+            openMainSettings: { [weak self] in self?.showSettings() },
+            close: { [weak self] in self?.browserSettingsWindow?.close() }
+        )
+
+        if browserSettingsWindow == nil {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 620, height: 660),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.center()
+            window.isReleasedWhenClosed = false
+            browserSettingsWindow = window
+        }
+
+        browserSettingsWindow?.title = isFirstRun ? "Первичная настройка браузеров" : "Настройка браузеров"
+        browserSettingsWindow?.contentView = NSHostingView(rootView: view)
+        browserSettingsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
