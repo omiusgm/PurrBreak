@@ -1,4 +1,12 @@
-# PurrBreak
+<p align="center">
+  <img src="docs/assets/purrbreak-icon.png" width="128" alt="PurrBreak app icon">
+</p>
+
+<h1 align="center">PurrBreak</h1>
+
+<p align="center">
+  Мягкий macOS-таймер для YouTube-пауз с большим спящим котом и мурчанием.
+</p>
 
 Маленькое macOS-приложение, которое считает время активного просмотра YouTube и запускает обязательную паузу с большим анимированным котом и мурчанием.
 
