@@ -920,7 +920,7 @@ private struct SettingsView: View {
                 Button {
                     showBrowserSettings()
                 } label: {
-                    Label("Настройка браузеров", systemImage: "globe")
+                    Label("Проверка браузеров", systemImage: "globe")
                 }
 
                 Spacer()
@@ -981,9 +981,9 @@ private struct BrowserSettingsView: View {
                         .foregroundStyle(Color.accentColor)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(isFirstRun ? "Подключим браузеры" : "Настройка браузеров")
+                        Text(isFirstRun ? "Доступ к браузеру" : "Проверка браузеров")
                             .font(.system(size: 26, weight: .bold))
-                        Text("PurrBreak считает YouTube только в подключенных браузерах")
+                        Text("Галочка появляется сама, когда PurrBreak успешно читает активную вкладку")
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -992,7 +992,7 @@ private struct BrowserSettingsView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Первый запуск")
                             .font(.headline)
-                        Text("Открой YouTube в браузере, которым пользуешься, и вернись сюда. macOS может попросить разрешение Automation - его нужно разрешить, чтобы PurrBreak видел URL активной вкладки.")
+                        Text("Ничего заранее подключать не нужно. Открой YouTube в Chrome, Safari или Yandex Browser. Когда macOS спросит Automation, разреши доступ. Если запроса нет или ты случайно отказал, открой системные разрешения кнопкой ниже.")
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -1004,8 +1004,7 @@ private struct BrowserSettingsView: View {
                 }
 
                 BrowserStatusPanel(
-                    statuses: model.browserStatuses,
-                    openAutomationSettings: openAutomationSettings
+                    statuses: model.browserStatuses
                 )
 
                 Divider()
@@ -1014,7 +1013,7 @@ private struct BrowserSettingsView: View {
                     Button {
                         openAutomationSettings()
                     } label: {
-                        Label("Открыть Automation", systemImage: "gearshape")
+                        Label("Открыть разрешения macOS", systemImage: "gearshape")
                     }
 
                     Spacer()
@@ -1040,38 +1039,45 @@ private struct BrowserSettingsView: View {
             .padding(24)
             .frame(width: 620)
         }
-        .frame(width: 620, height: 660)
+        .frame(width: 620, height: 560)
     }
 }
 
 private struct BrowserStatusPanel: View {
     let statuses: [BrowserStatus]
-    let openAutomationSettings: () -> Void
+
+    private var visibleStatuses: [BrowserStatus] {
+        let visible = statuses.filter { status in
+            status.isInstalled || status.state == .connected || status.state == .needsPermission || status.state == .unsupported
+        }
+
+        return visible.isEmpty ? statuses : visible
+    }
+
+    private var hiddenCount: Int {
+        max(0, statuses.count - visibleStatuses.count)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label("Браузеры", systemImage: "globe")
-                    .font(.headline)
+            Label("Доступ к браузерам", systemImage: "globe")
+                .font(.headline)
 
-                Spacer()
-
-                Button {
-                    openAutomationSettings()
-                } label: {
-                    Label("Automation", systemImage: "gearshape")
-                }
-            }
-
-            Text("Статус обновляется после попытки прочитать активную вкладку. Открой YouTube в браузере, чтобы проверить подключение.")
+            Text("Это не ручная настройка. Статус просто показывает, получилось ли у PurrBreak прочитать активную вкладку. Если галочка уже есть, делать ничего не нужно.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(spacing: 8) {
-                ForEach(statuses) { status in
+                ForEach(visibleStatuses) { status in
                     BrowserStatusRow(status: status)
                 }
+            }
+
+            if hiddenCount > 0 {
+                Text("Неустановленные браузеры скрыты: \(hiddenCount).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -1153,7 +1159,7 @@ private struct HelpView: View {
                 helpSection(
                     title: "Статусы браузеров",
                     icon: "checklist",
-                    text: "Отдельное окно Настройка браузеров показывает, найден ли браузер на этом Mac, получилось ли прочитать активную вкладку или нужно открыть системные настройки Automation."
+                    text: "Отдельное окно Проверка браузеров показывает, получилось ли прочитать активную вкладку. Если галочка уже есть, делать ничего не нужно; системные настройки нужны только при отказе или ошибке доступа."
                 )
 
                 helpSection(
@@ -1748,7 +1754,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(countdownItem)
         menu.addItem(.separator())
         menu.addItem(menuItem(title: "Открыть настройки", action: #selector(openSettingsFromMenu)))
-        menu.addItem(menuItem(title: "Настройка браузеров", action: #selector(openBrowserSettingsFromMenu)))
+        menu.addItem(menuItem(title: "Проверка браузеров", action: #selector(openBrowserSettingsFromMenu)))
         menu.addItem(menuItem(title: "Справка", action: #selector(openHelpFromMenu)))
         if model.isPreviewingBreak {
             menu.addItem(menuItem(title: "Остановить тест", action: #selector(stopPreviewFromMenu)))
@@ -1871,7 +1877,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if browserSettingsWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 620, height: 660),
+                contentRect: NSRect(x: 0, y: 0, width: 620, height: 560),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false
@@ -1881,7 +1887,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
             browserSettingsWindow = window
         }
 
-        browserSettingsWindow?.title = isFirstRun ? "Первичная настройка браузеров" : "Настройка браузеров"
+        browserSettingsWindow?.title = isFirstRun ? "Доступ к браузеру" : "Проверка браузеров"
         browserSettingsWindow?.contentView = NSHostingView(rootView: view)
         browserSettingsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
