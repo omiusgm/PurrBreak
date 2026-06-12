@@ -201,13 +201,16 @@ open .build/PurrBreak.app
 
 Скрипт отправит `main` и тег `v0.1.0`. После push тега GitHub Actions соберет `PurrBreak-0.1.0-macOS.zip` и создаст GitHub Release.
 
-Чтобы домашняя страница проекта и лендинг Companion открывались как обычные страницы:
+Домашняя страница проекта и лендинг Companion публикуются через GitHub Actions из папки [`docs`](docs).
+
+Если GitHub Pages еще не включен:
 
 1. Открой настройки репозитория на GitHub.
 2. Перейди в `Pages`.
-3. В `Build and deployment` выбери `Deploy from a branch`.
-4. Выбери branch `main` и folder `/docs`.
-5. После публикации главная страница будет доступна по адресу `https://omiusgm.github.io/PurrBreak/`, а Companion - по адресу `https://omiusgm.github.io/PurrBreak/companion/`.
+3. В `Build and deployment` выбери `GitHub Actions`.
+4. Запусти workflow `Pages` или сделай push в `main`.
+
+После публикации главная страница будет доступна по адресу `https://omiusgm.github.io/PurrBreak/`, а Companion - по адресу `https://omiusgm.github.io/PurrBreak/companion/`.
 
 Для поля `About` на GitHub можно поставить:
 
