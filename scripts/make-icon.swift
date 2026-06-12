@@ -7,6 +7,11 @@ let outputPath = CommandLine.arguments.dropFirst().first ?? ".build/PurrBreak.ic
 let fileManager = FileManager.default
 let outputURL = URL(fileURLWithPath: outputPath)
 let iconsetURL = outputURL.deletingPathExtension().appendingPathExtension("iconset")
+let projectURL = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+let sourceIconURL = projectURL.appendingPathComponent("Sources/PurrBreak/Resources/app-icon-source.png")
+let sourceIcon = NSImage(contentsOf: sourceIconURL)
 
 try? fileManager.removeItem(at: iconsetURL)
 try fileManager.createDirectory(at: iconsetURL, withIntermediateDirectories: true)
@@ -26,7 +31,7 @@ let iconFiles: [(name: String, pixels: Int)] = [
 ]
 
 for iconFile in iconFiles {
-    let image = drawIcon(size: iconFile.pixels)
+    let image = drawIcon(size: iconFile.pixels, sourceIcon: sourceIcon)
     let data = try pngData(from: image, pixels: iconFile.pixels)
     try data.write(to: iconsetURL.appendingPathComponent(iconFile.name), options: .atomic)
 }
@@ -44,13 +49,20 @@ guard process.terminationStatus == 0 else {
     exit(Int32(process.terminationStatus))
 }
 
-func drawIcon(size: Int) -> NSImage {
+func drawIcon(size: Int, sourceIcon: NSImage?) -> NSImage {
     let rect = NSRect(x: 0, y: 0, width: size, height: size)
     let scale = CGFloat(size) / 1024.0
     let image = NSImage(size: rect.size)
 
     image.lockFocus()
     NSGraphicsContext.current?.imageInterpolation = .high
+    NSGraphicsContext.current?.cgContext.clear(rect)
+
+    if let sourceIcon {
+        drawSourceIcon(sourceIcon, in: rect, scale: scale)
+        image.unlockFocus()
+        return image
+    }
 
     let background = NSBezierPath(roundedRect: rect.insetBy(dx: 42 * scale, dy: 42 * scale), xRadius: 210 * scale, yRadius: 210 * scale)
     NSColor(red: 0.055, green: 0.095, blue: 0.105, alpha: 1.0).setFill()
@@ -113,6 +125,38 @@ func drawIcon(size: Int) -> NSImage {
     return image
 }
 
+func drawSourceIcon(_ sourceIcon: NSImage, in rect: NSRect, scale: CGFloat) {
+    let iconRect = rect.insetBy(dx: 42 * scale, dy: 42 * scale)
+    let mask = NSBezierPath(
+        roundedRect: iconRect,
+        xRadius: 210 * scale,
+        yRadius: 210 * scale
+    )
+
+    NSGraphicsContext.saveGraphicsState()
+    mask.addClip()
+
+    let sourceSize = sourceIcon.size
+    let cropInset = min(sourceSize.width, sourceSize.height) * 0.052
+    let sourceRect = NSRect(
+        x: cropInset,
+        y: cropInset,
+        width: sourceSize.width - cropInset * 2,
+        height: sourceSize.height - cropInset * 2
+    )
+
+    sourceIcon.draw(
+        in: iconRect,
+        from: sourceRect,
+        operation: .sourceOver,
+        fraction: 1.0,
+        respectFlipped: false,
+        hints: [.interpolation: NSImageInterpolation.high]
+    )
+
+    NSGraphicsContext.restoreGraphicsState()
+}
+
 func drawEar(points: [NSPoint], fill: NSColor) {
     let path = NSBezierPath()
     path.move(to: points[0])
@@ -142,12 +186,37 @@ func drawWhisker(from start: NSPoint, to end: NSPoint, lineWidth: CGFloat) {
 }
 
 func pngData(from image: NSImage, pixels: Int) throws -> Data {
-    guard let tiff = image.tiffRepresentation,
-          let bitmap = NSBitmapImageRep(data: tiff),
-          let data = bitmap.representation(using: .png, properties: [:]) else {
+    guard let bitmap = NSBitmapImageRep(
+        bitmapDataPlanes: nil,
+        pixelsWide: pixels,
+        pixelsHigh: pixels,
+        bitsPerSample: 8,
+        samplesPerPixel: 4,
+        hasAlpha: true,
+        isPlanar: false,
+        colorSpaceName: .deviceRGB,
+        bytesPerRow: 0,
+        bitsPerPixel: 0
+    ) else {
         throw CocoaError(.fileWriteUnknown)
     }
 
     bitmap.size = NSSize(width: pixels, height: pixels)
+
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
+    NSGraphicsContext.current?.imageInterpolation = .high
+    image.draw(
+        in: NSRect(x: 0, y: 0, width: pixels, height: pixels),
+        from: NSRect(x: 0, y: 0, width: image.size.width, height: image.size.height),
+        operation: .copy,
+        fraction: 1.0
+    )
+    NSGraphicsContext.restoreGraphicsState()
+
+    guard let data = bitmap.representation(using: .png, properties: [:]) else {
+        throw CocoaError(.fileWriteUnknown)
+    }
+
     return data
 }
