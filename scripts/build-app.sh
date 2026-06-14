@@ -6,6 +6,7 @@ APP_NAME="PurrBreak"
 APP_DIR="$ROOT_DIR/.build/$APP_NAME.app"
 EXECUTABLE="$ROOT_DIR/.build/release/$APP_NAME"
 ICON_FILE="$ROOT_DIR/.build/$APP_NAME.icns"
+VERSION="${PURRBREAK_VERSION:-${1:-$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")}}"
 
 cd "$ROOT_DIR"
 swift build -c release >&2
@@ -42,7 +43,7 @@ cat > "$APP_DIR/Contents/Info.plist" <<'PLIST'
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>0.1.0</string>
+  <string>__VERSION__</string>
   <key>CFBundleVersion</key>
   <string>1</string>
   <key>LSMinimumSystemVersion</key>
@@ -56,6 +57,8 @@ cat > "$APP_DIR/Contents/Info.plist" <<'PLIST'
 </dict>
 </plist>
 PLIST
+
+/usr/bin/sed -i '' "s/__VERSION__/$VERSION/g" "$APP_DIR/Contents/Info.plist"
 
 codesign --force --deep --sign - "$APP_DIR" >/dev/null
 

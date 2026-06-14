@@ -32,6 +32,11 @@ The optional PurrBreak Companion browser extension hides sticky YouTube hooks li
 
 В отличие от строгих блокировщиков, PurrBreak не пытается наказать или запереть пользователя. Его задача проще: заметить момент залипания, мягко перекрыть экран на несколько минут и дать шанс вернуться в нормальное состояние.
 
+<p align="center">
+  <img src="docs/assets/screenshot-main.svg" width="49%" alt="PurrBreak settings window">
+  <img src="docs/assets/screenshot-break.svg" width="49%" alt="PurrBreak cat break overlay">
+</p>
+
 ## Скачать приложение
 
 1. Открой GitHub Releases.
@@ -179,10 +184,10 @@ open .build/PurrBreak.app
 ## Упаковка релиза
 
 ```zsh
-./scripts/package-release.sh 0.1.0
+./scripts/package-release.sh
 ```
 
-Архив появится в `dist/PurrBreak-0.1.0-macOS.zip`.
+Версия берется из файла [`VERSION`](VERSION). Архив появится в `dist/PurrBreak-<version>-macOS.zip`.
 
 ## Публикация на GitHub
 
@@ -200,7 +205,7 @@ open .build/PurrBreak.app
 ./scripts/publish-github.sh https://github.com/USERNAME/PurrBreak.git
 ```
 
-Скрипт отправит `main` и тег `v0.1.0`. После push тега GitHub Actions соберет `PurrBreak-0.1.0-macOS.zip` и создаст GitHub Release.
+Скрипт отправит `main` и тег из файла [`VERSION`](VERSION). После push тега GitHub Actions соберет `PurrBreak-<version>-macOS.zip`, `PurrBreak-Companion-<version>.zip` и создаст GitHub Release.
 
 Домашняя страница проекта и лендинг Companion публикуются через GitHub Actions из папки [`docs`](docs).
 

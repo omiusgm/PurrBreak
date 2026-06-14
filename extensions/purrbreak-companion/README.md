@@ -30,7 +30,7 @@ Instagram, экспериментально:
 
 Для Chrome, Yandex Browser, Arc, Brave, Edge, Opera, Vivaldi и Chromium:
 
-1. Скачай и распакуй `PurrBreak-Companion-0.1.0.zip` из GitHub Release или собери архив командой `./scripts/package-companion.sh`.
+1. Скачай и распакуй `PurrBreak-Companion-*.zip` из GitHub Release или собери архив командой `./scripts/package-companion.sh`.
 2. Открой страницу расширений браузера, например `chrome://extensions`.
 3. Включи developer mode.
 4. Нажми `Load unpacked`.

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="${1:-0.1.0}"
+VERSION="${1:-$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")}"
 EXTENSION_NAME="PurrBreak-Companion"
 SOURCE_DIR="$ROOT_DIR/extensions/purrbreak-companion"
 DIST_DIR="$ROOT_DIR/dist"

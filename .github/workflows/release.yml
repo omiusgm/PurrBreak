@@ -28,8 +28,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          cat > release-notes.md <<NOTES
+          PurrBreak $VERSION is a gentle macOS YouTube break app with a cozy animated cat overlay.
+
+          Download:
+          - PurrBreak-$VERSION-macOS.zip — the macOS app.
+          - PurrBreak-Companion-$VERSION.zip — optional browser extension for hiding Shorts, recommendations, comments, autoplay, and experimental Instagram Reels hooks.
+
+          Install:
+          1. Unzip PurrBreak-$VERSION-macOS.zip.
+          2. Drag PurrBreak.app into Applications.
+          3. On first launch, right-click the app and choose Open if macOS shows a security warning.
+          4. Allow Automation access for the browser you use with YouTube.
+
+          This release is ad-hoc signed and not yet Apple-notarized.
+          NOTES
+
           gh release create "$GITHUB_REF_NAME" \
             "dist/PurrBreak-$VERSION-macOS.zip" \
             "dist/PurrBreak-Companion-$VERSION.zip" \
             --title "PurrBreak $VERSION" \
-            --notes "Download PurrBreak-$VERSION-macOS.zip, unzip it, and open PurrBreak.app. Optional: download PurrBreak-Companion-$VERSION.zip to install the browser extension as an unpacked extension. The app is currently ad-hoc signed, so macOS may ask you to right-click and choose Open on first launch."
+            --notes-file release-notes.md

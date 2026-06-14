@@ -9,6 +9,7 @@ if [[ $# -ne 1 ]]; then
 fi
 
 REMOTE_URL="$1"
+VERSION="$(tr -d '[:space:]' < "$(cd "$(dirname "$0")/.." && pwd)/VERSION")"
 
 if git remote get-url origin >/dev/null 2>&1; then
   git remote set-url origin "$REMOTE_URL"
@@ -17,4 +18,7 @@ else
 fi
 
 git push -u origin main
-git push origin v0.1.0
+if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
+  git tag "v$VERSION"
+fi
+git push origin "v$VERSION"
