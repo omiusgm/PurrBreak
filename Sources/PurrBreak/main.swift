@@ -1,5 +1,6 @@
 import AppKit
 import AVFoundation
+import ServiceManagement
 import SwiftUI
 
 private enum DefaultsKey {
@@ -158,6 +159,14 @@ private enum L10n {
         "settings.companionTitle": "Дополнительно: убрать Shorts и рекомендации",
         "settings.companionText": "Companion-расширение прячет липкие элементы YouTube и экспериментально помогает с Instagram Reels.",
         "settings.companionButton": "Открыть расширение",
+        "settings.launchAtLogin": "Запускать при входе в macOS",
+        "settings.launchAtLoginOn": "Включено",
+        "settings.launchAtLoginOff": "Выключено",
+        "settings.launchAtLoginRequiresApproval": "Нужно подтвердить в System Settings → Login Items.",
+        "settings.launchAtLoginNotFound": "Доступно после установки PurrBreak как обычного .app.",
+        "settings.launchAtLoginUnknown": "Статус автозапуска неизвестен.",
+        "settings.launchAtLoginError": "Не удалось изменить автозапуск: %@",
+        "settings.openLoginItems": "Открыть Login Items",
         "settings.purrSound": "Мурчание во время паузы",
         "settings.purrVolume": "Громкость мурчания",
         "settings.minutes": "%d мин",
@@ -201,6 +210,9 @@ private enum L10n {
         "help.companion.title": "Дополнительно: убрать Shorts и рекомендации",
         "help.companion.text": "PurrBreak делает паузы, а PurrBreak Companion убирает липкие элементы внутри YouTube: Shorts, рекомендации, комментарии и autoplay. В MVP также есть экспериментальные переключатели для Instagram Reels и Explore.",
         "help.companion.button": "Открыть PurrBreak Companion",
+        "help.feedback.title": "Ошибки и обратная связь",
+        "help.feedback.text": "Если что-то сломалось или появилась идея, можно отправить issue на GitHub. PurrBreak не отправляет скрытую телеметрию автоматически.",
+        "help.feedback.button": "Отправить отзыв",
         "help.notDoing.title": "Что приложение не делает",
         "help.notDoing.text": "PurrBreak не блокирует сайты на уровне сети, не следит за всеми приложениями и не отправляет данные наружу. Это мягкий локальный таймер для YouTube-пауз.",
         "help.backgroundMusic.title": "YouTube-музыка фоном",
@@ -274,6 +286,14 @@ private enum L10n {
         "settings.companionTitle": "Extra: hide Shorts and recommendations",
         "settings.companionText": "The Companion extension hides sticky YouTube hooks and experimentally helps with Instagram Reels.",
         "settings.companionButton": "Open extension",
+        "settings.launchAtLogin": "Open at Login",
+        "settings.launchAtLoginOn": "Enabled",
+        "settings.launchAtLoginOff": "Disabled",
+        "settings.launchAtLoginRequiresApproval": "Needs approval in System Settings → Login Items.",
+        "settings.launchAtLoginNotFound": "Available after installing PurrBreak as a regular .app.",
+        "settings.launchAtLoginUnknown": "Login item status is unknown.",
+        "settings.launchAtLoginError": "Could not change Open at Login: %@",
+        "settings.openLoginItems": "Open Login Items",
         "settings.purrSound": "Purring during breaks",
         "settings.purrVolume": "Purr volume",
         "settings.minutes": "%d min",
@@ -317,6 +337,9 @@ private enum L10n {
         "help.companion.title": "Extra: hide Shorts and recommendations",
         "help.companion.text": "PurrBreak creates breaks, while PurrBreak Companion removes sticky YouTube hooks: Shorts, recommendations, comments, and autoplay. The MVP also includes experimental toggles for Instagram Reels and Explore.",
         "help.companion.button": "Open PurrBreak Companion",
+        "help.feedback.title": "Bugs and feedback",
+        "help.feedback.text": "If something breaks or you have an idea, you can open a GitHub issue. PurrBreak does not send hidden telemetry automatically.",
+        "help.feedback.button": "Send feedback",
         "help.notDoing.title": "What the app does not do",
         "help.notDoing.text": "PurrBreak does not block websites at the network level, monitor all apps, or send data anywhere. It is a gentle local timer for YouTube breaks.",
         "help.backgroundMusic.title": "YouTube music in the background",
@@ -355,6 +378,42 @@ private enum L10n {
 
     static func text(_ key: String, language: AppLanguage, arguments: [CVarArg]) -> String {
         String(format: text(key, language: language), locale: language.locale, arguments: arguments)
+    }
+}
+
+private enum LaunchAtLoginController {
+    static var isEnabled: Bool {
+        SMAppService.mainApp.status == .enabled
+    }
+
+    static func setEnabled(_ enabled: Bool) throws {
+        if enabled {
+            guard SMAppService.mainApp.status != .enabled else { return }
+            try SMAppService.mainApp.register()
+            return
+        }
+
+        guard SMAppService.mainApp.status == .enabled || SMAppService.mainApp.status == .requiresApproval else { return }
+        try SMAppService.mainApp.unregister()
+    }
+
+    static func statusText(language: AppLanguage) -> String {
+        switch SMAppService.mainApp.status {
+        case .enabled:
+            return L10n.text("settings.launchAtLoginOn", language: language)
+        case .notRegistered:
+            return L10n.text("settings.launchAtLoginOff", language: language)
+        case .requiresApproval:
+            return L10n.text("settings.launchAtLoginRequiresApproval", language: language)
+        case .notFound:
+            return L10n.text("settings.launchAtLoginNotFound", language: language)
+        @unknown default:
+            return L10n.text("settings.launchAtLoginUnknown", language: language)
+        }
+    }
+
+    static func openSystemSettings() {
+        SMAppService.openSystemSettingsLoginItems()
     }
 }
 
@@ -434,6 +493,7 @@ private final class PurrModel: ObservableObject {
     @Published var settings: PurrSettings {
         didSet {
             settings.save()
+            refreshLaunchAtLoginStatus()
             onSettingsChanged?(settings)
         }
     }
@@ -453,6 +513,8 @@ private final class PurrModel: ObservableObject {
     @Published var dailyYouTubeSeconds: Int
     @Published var dailyBreakCount: Int
     @Published var dailySavedSeconds: Int
+    @Published var launchAtLoginEnabled = LaunchAtLoginController.isEnabled
+    @Published var launchAtLoginStatusText = ""
 
     var onSettingsChanged: ((PurrSettings) -> Void)?
     private var dailyStatsDate: String
@@ -467,6 +529,7 @@ private final class PurrModel: ObservableObject {
         self.dailyYouTubeSeconds = stats.youtubeSeconds
         self.dailyBreakCount = stats.breakCount
         self.dailySavedSeconds = stats.savedSeconds
+        refreshLaunchAtLoginStatus()
     }
 
     var watchLimitSeconds: Int {
@@ -579,6 +642,26 @@ private final class PurrModel: ObservableObject {
 
     func tr(_ key: String, _ args: CVarArg...) -> String {
         L10n.text(key, language: language, arguments: args)
+    }
+
+    func refreshLaunchAtLoginStatus() {
+        launchAtLoginEnabled = LaunchAtLoginController.isEnabled
+        launchAtLoginStatusText = LaunchAtLoginController.statusText(language: language)
+    }
+
+    func setLaunchAtLoginEnabled(_ enabled: Bool) {
+        do {
+            try LaunchAtLoginController.setEnabled(enabled)
+            refreshLaunchAtLoginStatus()
+        } catch {
+            refreshLaunchAtLoginStatus()
+            launchAtLoginStatusText = tr("settings.launchAtLoginError", error.localizedDescription)
+        }
+    }
+
+    func openLoginItemsSettings() {
+        LaunchAtLoginController.openSystemSettings()
+        refreshLaunchAtLoginStatus()
     }
 
     func markBrowserConnected(bundleID: String, displayName: String) {
@@ -1566,6 +1649,34 @@ private struct SettingsView: View {
                         .fill(Color.primary.opacity(0.045))
                 )
 
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle(
+                        model.tr("settings.launchAtLogin"),
+                        isOn: Binding(
+                            get: { model.launchAtLoginEnabled },
+                            set: { model.setLaunchAtLoginEnabled($0) }
+                        )
+                    )
+
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(model.launchAtLoginStatusText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer()
+                        Button {
+                            model.openLoginItemsSettings()
+                        } label: {
+                            Label(model.tr("settings.openLoginItems"), systemImage: "gearshape")
+                        }
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.primary.opacity(0.045))
+                )
+
                 Toggle(model.tr("settings.purrSound"), isOn: binding(\.soundEnabled))
 
                 VStack(alignment: .leading, spacing: 6) {
@@ -1629,6 +1740,9 @@ private struct SettingsView: View {
         }
         .padding(24)
         .frame(width: 560)
+        .onAppear {
+            model.refreshLaunchAtLoginStatus()
+        }
     }
 
     private func settingRow(title: String, value: String) -> some View {
@@ -1813,6 +1927,7 @@ private struct BrowserStatusRow: View {
 private struct HelpView: View {
     @ObservedObject var model: PurrModel
     let openCompanion: () -> Void
+    let openFeedback: () -> Void
 
     var body: some View {
         ScrollView {
@@ -1882,6 +1997,14 @@ private struct HelpView: View {
                     title: model.tr("help.backgroundMusic.title"),
                     icon: "music.note",
                     text: model.tr("help.backgroundMusic.text")
+                )
+
+                actionSection(
+                    title: model.tr("help.feedback.title"),
+                    icon: "bubble.left.and.exclamationmark.bubble.right",
+                    text: model.tr("help.feedback.text"),
+                    buttonTitle: model.tr("help.feedback.button"),
+                    action: openFeedback
                 )
 
                 helpSection(
@@ -2734,8 +2857,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             )
 
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 560, height: 740),
-                styleMask: [.titled, .closable, .miniaturizable],
+                contentRect: NSRect(x: 0, y: 0, width: 560, height: 800),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false
             )
@@ -2792,7 +2915,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             window.title = model.tr("window.help")
             window.contentView = NSHostingView(rootView: HelpView(
                 model: model,
-                openCompanion: { [weak self] in self?.openCompanionPage() }
+                openCompanion: { [weak self] in self?.openCompanionPage() },
+                openFeedback: { [weak self] in self?.openFeedbackPage() }
             ))
             window.delegate = self
             window.center()
@@ -2858,6 +2982,12 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
 
     private func openCompanionPage() {
         if let url = URL(string: "https://omiusgm.github.io/PurrBreak/companion/") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func openFeedbackPage() {
+        if let url = URL(string: "https://github.com/omiusgm/PurrBreak/issues/new") {
             NSWorkspace.shared.open(url)
         }
     }
