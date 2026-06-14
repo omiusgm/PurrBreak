@@ -1535,9 +1535,10 @@ private struct SettingsView: View {
     let quit: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .center, spacing: 14) {
-                AppIconMark(size: 58)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .center, spacing: 14) {
+                    AppIconMark(size: 58)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("PurrBreak")
@@ -1737,9 +1738,12 @@ private struct SettingsView: View {
                     Label(model.tr("settings.quit"), systemImage: "xmark.circle")
                 }
             }
+            }
+            .padding(24)
+            .frame(width: 560, alignment: .leading)
         }
-        .padding(24)
         .frame(width: 560)
+        .frame(minHeight: 620)
         .onAppear {
             model.refreshLaunchAtLoginStatus()
         }
@@ -2645,9 +2649,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         configureStatusItem()
         monitor?.start()
 
-        if UserDefaults.standard.bool(forKey: DefaultsKey.didShowBrowserSetup) {
-            showSettings()
-        } else {
+        if !UserDefaults.standard.bool(forKey: DefaultsKey.didShowBrowserSetup) {
             showBrowserSettings(isFirstRun: true)
             UserDefaults.standard.set(true, forKey: DefaultsKey.didShowBrowserSetup)
         }
