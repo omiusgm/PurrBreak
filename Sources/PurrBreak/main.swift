@@ -9,6 +9,7 @@ private enum DefaultsKey {
     static let soundEnabled = "soundEnabled"
     static let purrVolume = "purrVolume"
     static let screensaverThemeID = "screensaverThemeID"
+    static let menuBarDisplayMode = "menuBarDisplayMode"
     static let didShowBrowserSetup = "didShowBrowserSetup"
     static let languageCode = "languageCode"
     static let statsDate = "statsDate"
@@ -59,6 +60,57 @@ private enum AppLanguage: String, CaseIterable, Identifiable, Equatable {
     }
 }
 
+private enum MenuBarDisplayMode: String, CaseIterable, Identifiable, Equatable {
+    case iconAndLabel
+    case iconAndClock
+    case iconAndMinutes
+    case clockOnly
+    case minutesOnly
+
+    var id: String { rawValue }
+
+    var showsIcon: Bool {
+        switch self {
+        case .iconAndLabel, .iconAndClock, .iconAndMinutes:
+            return true
+        case .clockOnly, .minutesOnly:
+            return false
+        }
+    }
+
+    static var fallback: MenuBarDisplayMode {
+        .iconAndLabel
+    }
+
+    static func matching(_ rawValue: String?) -> MenuBarDisplayMode {
+        guard let rawValue,
+              let mode = MenuBarDisplayMode(rawValue: rawValue) else {
+            return fallback
+        }
+
+        return mode
+    }
+
+    func displayName(language: AppLanguage) -> String {
+        L10n.text("menuBar.mode.\(rawValue)", language: language)
+    }
+
+    func title(clockText: String, minutesText: String) -> String {
+        switch self {
+        case .iconAndLabel:
+            return " Purr \(clockText)"
+        case .iconAndClock:
+            return " \(clockText)"
+        case .iconAndMinutes:
+            return " \(minutesText)"
+        case .clockOnly:
+            return clockText
+        case .minutesOnly:
+            return minutesText
+        }
+    }
+}
+
 private enum L10n {
     private static let ru: [String: String] = [
         "app.subtitle": "YouTube-паузы и меньше ловушек в Shorts/Reels",
@@ -97,6 +149,7 @@ private enum L10n {
         "settings.youtubeInactive": "YouTube не активен",
         "settings.watched": "Просмотрено",
         "settings.screensaver": "Заставка",
+        "settings.menuBarDisplay": "Меню-бар",
         "settings.limitsTitle": "Лимиты YouTube",
         "settings.limitsCaption": "Обычные видео и Shorts считаются отдельно.",
         "settings.limit": "Лимит YouTube",
@@ -164,6 +217,12 @@ private enum L10n {
         "overlay.previewMessage": "Это предпросмотр: клики проходят сквозь оверлей. Esc закрывает.",
         "menu.openSettings": "Открыть настройки",
         "menu.screensaver": "Заставка",
+        "menu.menuBarDisplay": "Вид в меню-баре",
+        "menuBar.mode.iconAndLabel": "Иконка + Purr 15:08",
+        "menuBar.mode.iconAndClock": "Иконка + 15:08",
+        "menuBar.mode.iconAndMinutes": "Иконка + 15м",
+        "menuBar.mode.clockOnly": "Только 15:08",
+        "menuBar.mode.minutesOnly": "Только 15м",
         "menu.tooltip": "PurrBreak: %@ %@. Просмотрено %@ / %@",
         "window.help": "Справка PurrBreak",
         "window.postBreak": "Пауза закончилась"
@@ -206,6 +265,7 @@ private enum L10n {
         "settings.youtubeInactive": "YouTube is not active",
         "settings.watched": "Watched",
         "settings.screensaver": "Screensaver",
+        "settings.menuBarDisplay": "Menu bar",
         "settings.limitsTitle": "YouTube limits",
         "settings.limitsCaption": "Regular videos and Shorts are counted separately.",
         "settings.limit": "YouTube limit",
@@ -273,6 +333,12 @@ private enum L10n {
         "overlay.previewMessage": "This is a preview: clicks pass through the overlay. Esc closes it.",
         "menu.openSettings": "Open Settings",
         "menu.screensaver": "Screensaver",
+        "menu.menuBarDisplay": "Menu bar display",
+        "menuBar.mode.iconAndLabel": "Icon + Purr 15:08",
+        "menuBar.mode.iconAndClock": "Icon + 15:08",
+        "menuBar.mode.iconAndMinutes": "Icon + 15m",
+        "menuBar.mode.clockOnly": "Only 15:08",
+        "menuBar.mode.minutesOnly": "Only 15m",
         "menu.tooltip": "PurrBreak: %@ %@. Watched %@ / %@",
         "window.help": "PurrBreak Help",
         "window.postBreak": "Break Complete"
@@ -324,6 +390,7 @@ private struct PurrSettings: Equatable {
     var soundEnabled: Bool
     var purrVolume: Double
     var screensaverThemeID: String
+    var menuBarDisplayMode: MenuBarDisplayMode
     var language: AppLanguage
 
     static func load() -> PurrSettings {
@@ -335,6 +402,7 @@ private struct PurrSettings: Equatable {
         let sound = defaults.object(forKey: DefaultsKey.soundEnabled) as? Bool ?? true
         let volume = defaults.object(forKey: DefaultsKey.purrVolume) as? Double ?? 0.65
         let themeID = defaults.string(forKey: DefaultsKey.screensaverThemeID) ?? BreakTheme.fallback.id
+        let menuBarDisplayMode = MenuBarDisplayMode.matching(defaults.string(forKey: DefaultsKey.menuBarDisplayMode))
         let language = AppLanguage.matching(defaults.string(forKey: DefaultsKey.languageCode))
 
         return PurrSettings(
@@ -344,6 +412,7 @@ private struct PurrSettings: Equatable {
             soundEnabled: sound,
             purrVolume: max(0.0, min(volume, 1.0)),
             screensaverThemeID: BreakTheme.matching(themeID).id,
+            menuBarDisplayMode: menuBarDisplayMode,
             language: language
         )
     }
@@ -356,6 +425,7 @@ private struct PurrSettings: Equatable {
         defaults.set(soundEnabled, forKey: DefaultsKey.soundEnabled)
         defaults.set(purrVolume, forKey: DefaultsKey.purrVolume)
         defaults.set(screensaverThemeID, forKey: DefaultsKey.screensaverThemeID)
+        defaults.set(menuBarDisplayMode.rawValue, forKey: DefaultsKey.menuBarDisplayMode)
         defaults.set(language.rawValue, forKey: DefaultsKey.languageCode)
     }
 }
@@ -444,6 +514,11 @@ private final class PurrModel: ObservableObject {
         return remainingUntilBreakText
     }
 
+    var statusCountdownMinutesText: String {
+        let seconds = (isOnBreak || isPreviewingBreak) ? breakRemainingSeconds : remainingUntilBreakSeconds
+        return Self.menuBarMinutesText(seconds: seconds, language: language)
+    }
+
     var statusCountdownLabel: String {
         if isOnBreak {
             return tr("status.breakRemaining")
@@ -472,6 +547,17 @@ private final class PurrModel: ObservableObject {
     static func clockText(seconds: Int) -> String {
         let clamped = max(0, seconds)
         return String(format: "%02d:%02d", clamped / 60, clamped % 60)
+    }
+
+    static func menuBarMinutesText(seconds: Int, language: AppLanguage) -> String {
+        let clamped = max(0, seconds)
+        let minutes = clamped == 0 ? 0 : Int(ceil(Double(clamped) / 60.0))
+        switch language {
+        case .ru:
+            return "\(minutes)м"
+        case .en:
+            return "\(minutes)m"
+        }
     }
 
     static func durationText(seconds: Int, language: AppLanguage) -> String {
@@ -1418,6 +1504,13 @@ private struct SettingsView: View {
                 Picker(model.tr("settings.screensaver"), selection: binding(\.screensaverThemeID)) {
                     ForEach(BreakTheme.all) { theme in
                         Text(theme.displayName(language: model.language)).tag(theme.id)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Picker(model.tr("settings.menuBarDisplay"), selection: binding(\.menuBarDisplayMode)) {
+                    ForEach(MenuBarDisplayMode.allCases) { mode in
+                        Text(mode.displayName(language: model.language)).tag(mode)
                     }
                 }
                 .pickerStyle(.menu)
@@ -2389,6 +2482,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var monitor: YouTubeMonitor?
     private var breakManager: BreakManager?
     private var statusItem: NSStatusItem?
+    private var statusIconImage: NSImage?
     private var settingsWindow: NSWindow?
     private var browserSettingsWindow: NSWindow?
     private var helpWindow: NSWindow?
@@ -2441,8 +2535,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         let image = AppIconStore.resizedImage(size: NSSize(width: 18, height: 18))
             ?? NSImage(systemSymbolName: "pawprint.fill", accessibilityDescription: "PurrBreak")
         image?.isTemplate = false
-        item.button?.image = image
-        item.button?.title = " Purr"
+        statusIconImage = image
         item.button?.imagePosition = .imageLeft
         item.button?.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
         item.button?.target = self
@@ -2452,7 +2545,12 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     private func updateStatusItem() {
-        statusItem?.button?.title = " Purr \(model.statusCountdownText)"
+        let mode = model.settings.menuBarDisplayMode
+        statusItem?.button?.image = mode.showsIcon ? statusIconImage : nil
+        statusItem?.button?.title = mode.title(
+            clockText: model.statusCountdownText,
+            minutesText: model.statusCountdownMinutesText
+        )
         statusItem?.button?.toolTip = model.tr(
             "menu.tooltip",
             model.statusCountdownLabel.lowercased(),
@@ -2479,6 +2577,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         menu.addItem(menuItem(title: model.tr("settings.startBreak"), action: #selector(startBreakFromMenu)))
         menu.addItem(menuItem(title: model.tr("settings.resetCounter"), action: #selector(resetCounterFromMenu)))
         menu.addItem(themeMenuItem())
+        menu.addItem(menuBarDisplayMenuItem())
         menu.addItem(.separator())
         menu.addItem(menuItem(title: model.tr("settings.quit"), action: #selector(quitFromMenu), keyEquivalent: "q"))
         statusItem?.menu = menu
@@ -2502,6 +2601,22 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             themeItem.representedObject = theme.id
             themeItem.state = model.settings.screensaverThemeID == theme.id ? .on : .off
             submenu.addItem(themeItem)
+        }
+
+        item.submenu = submenu
+        return item
+    }
+
+    private func menuBarDisplayMenuItem() -> NSMenuItem {
+        let item = NSMenuItem(title: model.tr("menu.menuBarDisplay"), action: nil, keyEquivalent: "")
+        let submenu = NSMenu()
+
+        for mode in MenuBarDisplayMode.allCases {
+            let modeItem = NSMenuItem(title: mode.displayName(language: model.language), action: #selector(selectMenuBarDisplayModeFromMenu(_:)), keyEquivalent: "")
+            modeItem.target = self
+            modeItem.representedObject = mode.rawValue
+            modeItem.state = model.settings.menuBarDisplayMode == mode ? .on : .off
+            submenu.addItem(modeItem)
         }
 
         item.submenu = submenu
@@ -2541,6 +2656,13 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         guard let id = sender.representedObject as? String else { return }
         var settings = model.settings
         settings.screensaverThemeID = BreakTheme.matching(id).id
+        model.settings = settings
+    }
+
+    @objc private func selectMenuBarDisplayModeFromMenu(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String else { return }
+        var settings = model.settings
+        settings.menuBarDisplayMode = MenuBarDisplayMode.matching(rawValue)
         model.settings = settings
     }
 
