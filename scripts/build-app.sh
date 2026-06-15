@@ -51,7 +51,7 @@ cat > "$APP_DIR/Contents/Info.plist" <<'PLIST'
   <key>LSUIElement</key>
   <true/>
   <key>NSAppleEventsUsageDescription</key>
-  <string>PurrBreak reads the active browser tab URL to count YouTube time only. / PurrBreak читает адрес активной вкладки браузера, чтобы считать только время на YouTube.</string>
+  <string>PurrBreak reads the active browser tab URL to count YouTube time and pauses the active YouTube video when a break starts. / PurrBreak читает адрес активной вкладки браузера, чтобы считать время на YouTube, и ставит активное YouTube-видео на паузу при начале перерыва.</string>
   <key>NSHumanReadableCopyright</key>
   <string>Personal use</string>
 </dict>

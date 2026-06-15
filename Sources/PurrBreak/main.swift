@@ -196,7 +196,7 @@ private enum L10n {
         "help.whatCounts.title": "Что считает приложение",
         "help.whatCounts.text": "PurrBreak каждую секунду смотрит, какой браузер сейчас активен, и читает URL активной вкладки. Счетчик идет только если активная вкладка открыта на youtube.com или youtu.be.",
         "help.whenBreak.title": "Когда появляется заставка",
-        "help.whenBreak.text": "Когда накоплен лимит просмотра, приложение показывает полноэкранную паузу с выбранной заставкой. По умолчанию обычный YouTube ограничен 20 минутами, Shorts - 5 минутами, пауза длится 5 минут. После завершения паузы счетчик сбрасывается.",
+        "help.whenBreak.text": "Когда накоплен лимит просмотра, приложение ставит активное YouTube-видео на паузу и показывает полноэкранную заставку на всех экранах. По умолчанию обычный YouTube ограничен 20 минутами, Shorts - 5 минутами, пауза длится 3 минуты. После завершения паузы счетчик сбрасывается.",
         "help.automation.title": "Зачем нужен Automation",
         "help.automation.text": "macOS требует разрешение Automation, чтобы приложение могло спросить браузер об адресе активной вкладки. PurrBreak не читает историю, пароли, содержимое страниц или личные данные.",
         "help.browserStatus.title": "Статусы браузеров",
@@ -223,9 +223,9 @@ private enum L10n {
         "postBreak.work": "Вернуться к делам",
         "postBreak.more": "Еще 2 минуты",
         "postBreak.youtube": "Вернуться к YouTube",
-        "overlay.breakTitle": "Пять минут перезагрузки",
+        "overlay.breakTitle": "Пауза для перезагрузки",
         "overlay.previewTitle": "Тест заставки",
-        "overlay.breakMessage": "Кот занял экран. YouTube подождет.",
+        "overlay.breakMessage": "Отдохни: отпусти клавиатуру и мышку, во время паузы они заблокированы. YouTube подождет.",
         "overlay.previewMessage": "Это предпросмотр: клики проходят сквозь оверлей. Esc закрывает.",
         "menu.openSettings": "Открыть настройки",
         "menu.screensaver": "Заставка",
@@ -323,7 +323,7 @@ private enum L10n {
         "help.whatCounts.title": "What gets counted",
         "help.whatCounts.text": "Every second, PurrBreak checks which browser is active and reads the active tab URL. The timer only runs when the active tab is on youtube.com or youtu.be.",
         "help.whenBreak.title": "When the break appears",
-        "help.whenBreak.text": "When your watch limit is reached, the app shows a full-screen pause with the selected cat animation. By default, regular YouTube is limited to 20 minutes, Shorts to 5 minutes, followed by a 5-minute break. After the break ends, the counter resets.",
+        "help.whenBreak.text": "When your watch limit is reached, the app pauses the active YouTube video and shows a full-screen break on every display. By default, regular YouTube is limited to 20 minutes, Shorts to 5 minutes, followed by a 3-minute break. After the break ends, the counter resets.",
         "help.automation.title": "Why Automation is needed",
         "help.automation.text": "macOS requires Automation permission so the app can ask the browser for the active tab address. PurrBreak does not read history, passwords, page contents, or personal data.",
         "help.browserStatus.title": "Browser status",
@@ -350,9 +350,9 @@ private enum L10n {
         "postBreak.work": "Back to work",
         "postBreak.more": "2 more minutes",
         "postBreak.youtube": "Return to YouTube",
-        "overlay.breakTitle": "Five-Minute Reset",
+        "overlay.breakTitle": "Reset Break",
         "overlay.previewTitle": "Break Preview",
-        "overlay.breakMessage": "The cat has taken the screen. YouTube can wait.",
+        "overlay.breakMessage": "Rest for a moment: let go of the keyboard and mouse, they are blocked during the break. YouTube can wait.",
         "overlay.previewMessage": "This is a preview: clicks pass through the overlay. Esc closes it.",
         "menu.openSettings": "Open Settings",
         "menu.screensaver": "Screensaver",
@@ -457,7 +457,7 @@ private struct PurrSettings: Equatable {
 
         let watchLimit = defaults.object(forKey: DefaultsKey.watchLimitMinutes) as? Int ?? 20
         let shortsLimit = defaults.object(forKey: DefaultsKey.shortsLimitMinutes) as? Int ?? 5
-        let breakLength = defaults.object(forKey: DefaultsKey.breakMinutes) as? Int ?? 5
+        let breakLength = defaults.object(forKey: DefaultsKey.breakMinutes) as? Int ?? 3
         let sound = defaults.object(forKey: DefaultsKey.soundEnabled) as? Bool ?? true
         let volume = defaults.object(forKey: DefaultsKey.purrVolume) as? Double ?? 0.65
         let themeID = defaults.string(forKey: DefaultsKey.screensaverThemeID) ?? BreakTheme.fallback.id
@@ -1020,6 +1020,89 @@ private final class BrowserURLReader {
     }
 }
 
+private final class BrowserVideoController {
+    private let pauseJavaScript = "(function(){var videos=document.querySelectorAll('video');for(var i=0;i<videos.length;i++){videos[i].pause();}return videos.length;})()"
+
+    func pauseYouTubeVideo(preferredBundleID: String?) {
+        for browser in pauseCandidates(preferredBundleID: preferredBundleID) {
+            if pauseYouTubeVideo(in: browser) {
+                return
+            }
+        }
+    }
+
+    private func pauseCandidates(preferredBundleID: String?) -> [BrowserDescriptor] {
+        var candidates: [BrowserDescriptor] = []
+        var seenBundleIDs = Set<String>()
+
+        func appendBrowser(bundleID: String?) {
+            guard let bundleID,
+                  let browser = BrowserDescriptor.byBundleID[bundleID],
+                  browser.canReadURL,
+                  !seenBundleIDs.contains(bundleID) else {
+                return
+            }
+
+            seenBundleIDs.insert(bundleID)
+            candidates.append(browser)
+        }
+
+        appendBrowser(bundleID: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
+        appendBrowser(bundleID: preferredBundleID)
+
+        return candidates
+    }
+
+    private func pauseYouTubeVideo(in browser: BrowserDescriptor) -> Bool {
+        guard !NSRunningApplication.runningApplications(withBundleIdentifier: browser.bundleID).isEmpty else {
+            return false
+        }
+
+        let script = pauseScript(for: browser)
+        var error: NSDictionary?
+        let result = NSAppleScript(source: script)?.executeAndReturnError(&error)
+
+        if let error {
+            let message = error[NSAppleScript.errorMessage] as? String ?? "unknown AppleScript error"
+            NSLog("PurrBreak could not pause YouTube in \(browser.displayName): \(message)")
+            return false
+        }
+
+        return result?.stringValue == "paused"
+    }
+
+    private func pauseScript(for browser: BrowserDescriptor) -> String {
+        switch browser.scriptKind {
+        case .safari:
+            return """
+            tell application id "\(browser.bundleID)"
+                if (count of documents) is 0 then return "no-document"
+                set tabURL to URL of front document
+                if tabURL contains "youtube.com" or tabURL contains "youtu.be" then
+                    do JavaScript "\(pauseJavaScript)" in front document
+                    return "paused"
+                end if
+                return "not-youtube"
+            end tell
+            """
+        case .chromium:
+            return """
+            tell application id "\(browser.bundleID)"
+                if (count of windows) is 0 then return "no-window"
+                set tabURL to URL of active tab of front window
+                if tabURL contains "youtube.com" or tabURL contains "youtu.be" then
+                    execute javascript "\(pauseJavaScript)" in active tab of front window
+                    return "paused"
+                end if
+                return "not-youtube"
+            end tell
+            """
+        case .unsupported:
+            return ""
+        }
+    }
+}
+
 private final class YouTubeMonitor {
     private let model: PurrModel
     private let reader = BrowserURLReader()
@@ -1140,6 +1223,7 @@ private final class YouTubeMonitor {
 private final class BreakManager {
     private let model: PurrModel
     private let audio = PurrAudioPlayer()
+    private let videoController = BrowserVideoController()
     private var windows: [NSWindow] = []
     private var previewWindows: [NSWindow] = []
     private var timer: Timer?
@@ -1161,6 +1245,7 @@ private final class BreakManager {
     func beginBreak(seconds overrideSeconds: Int? = nil) {
         guard !model.isOnBreak else { return }
 
+        videoController.pauseYouTubeVideo(preferredBundleID: model.lastYouTubeBundleID)
         closePreview()
 
         let seconds = max(60, overrideSeconds ?? model.settings.breakMinutes * 60)
@@ -1225,6 +1310,8 @@ private final class BreakManager {
     private func updatePreview() {
         guard let previewEndDate else { return }
 
+        refreshPreviewWindowsIfNeeded()
+
         let remaining = Int(ceil(previewEndDate.timeIntervalSinceNow))
         model.breakRemainingSeconds = max(0, remaining)
         onStatusChanged?()
@@ -1236,6 +1323,8 @@ private final class BreakManager {
 
     private func updateBreak() {
         guard let breakEndDate else { return }
+
+        refreshBreakWindowsIfNeeded()
 
         let remaining = Int(ceil(breakEndDate.timeIntervalSinceNow))
         model.breakRemainingSeconds = max(0, remaining)
@@ -1317,6 +1406,37 @@ private final class BreakManager {
         }
 
         return createdWindows
+    }
+
+    private func refreshBreakWindowsIfNeeded() {
+        guard windowsNeedRefresh(windows) else { return }
+
+        dismissOverlayWindows(windows)
+        windows = createWindows(mode: .break, ignoresMouseEvents: false, level: .screenSaver)
+    }
+
+    private func refreshPreviewWindowsIfNeeded() {
+        guard windowsNeedRefresh(previewWindows) else { return }
+
+        dismissOverlayWindows(previewWindows)
+        previewWindows = createWindows(mode: .preview, ignoresMouseEvents: true, level: .screenSaver)
+    }
+
+    private func windowsNeedRefresh(_ windows: [NSWindow]) -> Bool {
+        let screenFrames = NSScreen.screens.map { $0.frame.integral }
+        let windowFrames = windows.map { $0.frame.integral }
+
+        guard screenFrames.count == windowFrames.count else {
+            return true
+        }
+
+        for (screenFrame, windowFrame) in zip(screenFrames, windowFrames) {
+            if !screenFrame.equalTo(windowFrame) {
+                return true
+            }
+        }
+
+        return false
     }
 
     private func dismissOverlayWindows(_ windows: [NSWindow]) {
