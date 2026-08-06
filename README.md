@@ -130,6 +130,10 @@ Safari и iPhone потребуют отдельную Safari Web Extension-об
 
 Идеи, которые мы обсуждаем, но не обязательно сразу добавляем в приложение, лежат в [`docs/idea-chest.md`](docs/idea-chest.md).
 
+## Переезд и история проекта
+
+Практическая памятка для продолжения разработки на новом Mac: [`docs/project-handoff.md`](docs/project-handoff.md). Сжатая история продуктовых решений из чата: [`docs/chat-summary.md`](docs/chat-summary.md).
+
 ## Проверка перед релизом
 
 Ручной чеклист перед публикацией лежит в [`docs/manual-test-checklist.md`](docs/manual-test-checklist.md).
